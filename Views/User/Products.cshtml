@@ -1,0 +1,29 @@
+﻿@model List<Linear_v1.Models.Product>
+@{
+    ViewData["Title"] = "Products"; Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="page-header">
+    <h2>Products</h2>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-success">@TempData["Success"]</div>
+}
+
+<div class="products-grid">
+    @foreach (var p in Model)
+    {
+        <div class="product-card">
+            <h3 class="product-title">@p.Title</h3>
+            <p class="product-desc">@p.ShortDescription</p>
+            <div class="product-price">৳ @p.Price.ToString("N0")</div>
+            <form asp-action="BuyProduct" asp-controller="User" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="productId" value="@p.Id" />
+                <button type="submit" class="btn-buy">Buy</button>
+            </form>
+        </div>
+    }
+</div>

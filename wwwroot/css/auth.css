@@ -1,0 +1,152 @@
+﻿.auth-body {
+    background: #0a0a0a;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+}
+
+.auth-card {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 36px;
+    color: #eee;
+}
+
+.brand {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+    .brand h2 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #fff;
+    }
+
+.accent {
+    color: #7c3aed;
+}
+
+.auth-card h3 {
+    text-align: center;
+    color: #aaa;
+    font-size: 15px;
+    margin-bottom: 24px;
+    font-weight: 400;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+    .form-group label {
+        display: block;
+        color: #999;
+        font-size: 13px;
+        margin-bottom: 6px;
+    }
+
+.form-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border 0.2s;
+}
+
+    .form-input:focus {
+        outline: none;
+        border-color: #7c3aed;
+    }
+
+.btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: #7c3aed;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.2s;
+}
+
+    .btn-primary:hover {
+        background: #6d28d9;
+    }
+
+.auth-link {
+    text-align: center;
+    margin-top: 20px;
+    color: #666;
+    font-size: 13px;
+}
+
+    .auth-link a {
+        color: #7c3aed;
+        text-decoration: none;
+    }
+
+.alert-error {
+    background: #2d1515;
+    border: 1px solid #7f1d1d;
+    color: #fca5a5;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.alert-info {
+    background: #172554;
+    border: 1px solid #1e40af;
+    color: #93c5fd;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.field-error {
+    color: #f87171;
+    font-size: 12px;
+}
+
+.form-group-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #888;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.success-icon, .error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: block;
+}
+
+.logo-sm {
+    height: 36px;
+    margin-bottom: 8px;
+}

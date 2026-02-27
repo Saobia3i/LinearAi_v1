@@ -1,0 +1,21 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Admin - @ViewData["Title"] | Linear AI</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/panel.css" />
+</head>
+<body class="panel-body admin-panel">
+    <nav class="sidebar admin-sidebar">
+        <div class="sidebar-brand">⚡ Admin</div>
+        <ul class="nav-links">
+            <li><a asp-controller="Admin" asp-action="Index">👤 Account</a></li>
+            <li><a asp-controller="Admin" asp-action="Orders">📦 Orders</a></li>
+        </ul>
+    </nav>
+    <main class="main-content">
+        @RenderBody()
+    </main>
+</body>
+</html>

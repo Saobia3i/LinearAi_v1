@@ -1,0 +1,63 @@
+﻿@model List<Linear_v1.Models.Order>
+@{
+    ViewData["Title"] = "Orders"; Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <h2>Order Management</h2>
+    <span class="badge">@Model.Count Orders</span>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-success">@TempData["Success"]</div>
+}
+
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Client Email</th>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Date</th>
+                <th>Payment Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model)
+            {
+                <tr>
+                    <td>@o.Id</td>
+                    <td>@o.User.Email</td>
+                    <td>@o.Product.Title</td>
+                    <td>৳ @o.Product.Price.ToString("N0")</td>
+                    <td>@o.OrderDate.ToString("dd/MM/yyyy")</td>
+                    <td>
+                        <span class="badge @(o.PaymentStatus == Linear_v1.Models.PaymentStatus.Paid ? "badge-success" : "badge-warning")">
+                            @(o.PaymentStatus == Linear_v1.Models.PaymentStatus.Paid ? "Paid" : "Pending")
+                        </span>
+                    </td>
+                    <td>
+                        <form asp-action="UpdatePaymentStatus" method="post" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="orderId" value="@o.Id" />
+                            @if (o.PaymentStatus == Linear_v1.Models.PaymentStatus.Pending)
+                            {
+                                <input type="hidden" name="status" value="1" />
+                                <button type="submit" class="btn-sm btn-success">Mark Paid</button>
+                            }
+                            else
+                            {
+                                <input type="hidden" name="status" value="0" />
+                                <button type="submit" class="btn-sm btn-warning">Mark Pending</button>
+                            }
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

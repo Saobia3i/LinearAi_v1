@@ -1,0 +1,39 @@
+﻿@model Linear_v1.Models.ApplicationUser
+@{
+    ViewData["Title"] = "My Account"; Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="page-header">
+    <h2>My Account</h2>
+</div>
+
+<div class="card">
+    <div class="account-info">
+        <div class="avatar">@Model.FullName[0]</div>
+        <div class="details">
+            <div class="detail-row">
+                <span class="label">Name</span>
+                <span class="value">@Model.FullName</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Email</span>
+                <span class="value">@Model.Email</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Account Created</span>
+                <span class="value">@Model.CreatedAt.ToString("dd MMM yyyy")</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Email Verified</span>
+                <span class="badge @(Model.EmailConfirmed ? "badge-success" : "badge-warning")">
+                    @(Model.EmailConfirmed ? "✓ Verified" : "⚠ Pending")
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form asp-controller="Account" asp-action="Logout" method="post" style="margin-top:20px;">
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn-danger">Logout</button>
+</form>

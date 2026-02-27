@@ -1,0 +1,19 @@
+﻿@{
+    ViewData["Title"] = "Email Confirmed"; Layout = "~/Views/Shared/_AuthLayout.cshtml";
+}
+
+<div class="auth-card text-center">
+    @if (ViewBag.Success == true)
+    {
+        <div class="success-icon">✅</div>
+        <h3>Email Verified Successfully!</h3>
+        <p>Your account is now active.</p>
+        <a asp-action="Login" class="btn-primary" style="display:inline-block;margin-top:16px;">Login Now</a>
+    }
+    else
+    {
+        <div class="error-icon">❌</div>
+        <h3>Verification Failed</h3>
+        <p>The link has expired or is invalid. Please contact support for a new link.</p>
+    }
+</div>

@@ -1,0 +1,39 @@
+﻿@model Linear_v1.Models.ApplicationUser
+@{
+    ViewData["Title"] = "Admin Panel"; Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <h2>Admin Account</h2>
+</div>
+
+<div class="stats-row">
+    <div class="stat-card">
+        <span class="stat-num">@ViewBag.TotalUsers</span>
+        <span class="stat-label">Total Users</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">@ViewBag.TotalOrders</span>
+        <span class="stat-label">Total Orders</span>
+    </div>
+    <div class="stat-card accent">
+        <span class="stat-num">@ViewBag.PendingOrders</span>
+        <span class="stat-label">Pending Orders</span>
+    </div>
+</div>
+
+<div class="card" style="margin-top:24px;">
+    <div class="account-info">
+        <div class="avatar admin-avatar">@Model.FullName[0]</div>
+        <div class="details">
+            <div class="detail-row"><span class="label">Name</span><span class="value">@Model.FullName</span></div>
+            <div class="detail-row"><span class="label">Email</span><span class="value">@Model.Email</span></div>
+            <div class="detail-row"><span class="label">Role</span><span class="badge badge-admin">Admin</span></div>
+        </div>
+    </div>
+</div>
+
+<form asp-controller="Account" asp-action="Logout" method="post" style="margin-top:20px;">
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn-danger">Logout</button>
+</form>

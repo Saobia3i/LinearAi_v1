@@ -1,0 +1,21 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"] - Linear AI</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/panel.css" />
+</head>
+<body class="panel-body">
+    <nav class="sidebar">
+        <div class="sidebar-brand">Linear <span class="accent">AI</span></div>
+        <ul class="nav-links">
+            <li><a asp-controller="User" asp-action="Index" class="@(ViewData["Title"]?.ToString() == "My Account" ? "active" : "")">👤 Account</a></li>
+            <li><a asp-controller="User" asp-action="Products" class="@(ViewData["Title"]?.ToString() == "Products" ? "active" : "")">🛒 Products</a></li>
+        </ul>
+    </nav>
+    <main class="main-content">
+        @RenderBody()
+    </main>
+</body>
+</html>
