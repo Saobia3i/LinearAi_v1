@@ -41,7 +41,7 @@ namespace Linear_v1.Controllers
             var existingUser = await _userManager.FindByEmailAsync(model.Email);
             if (existingUser != null)
             {
-                ModelState.AddModelError("Email", "এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট আছে।");
+                ModelState.AddModelError("Email", "An account already exists with this email.");
                 return View(model);
             }
 
@@ -117,19 +117,19 @@ namespace Linear_v1.Controllers
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                ModelState.AddModelError(string.Empty, "ইমেইল বা পাসওয়ার্ড ভুল।");
+                ModelState.AddModelError(string.Empty, "Invalid email or password.");
                 return View(model);
             }
 
             if (!user.EmailConfirmed)
             {
-                ModelState.AddModelError(string.Empty, "আগে ইমেইল ভেরিফাই করুন।");
+                ModelState.AddModelError(string.Empty, "Please verify your email first.");
                 return View(model);
             }
 
             if (!user.IsActive)
             {
-                ModelState.AddModelError(string.Empty, "আপনার অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে।");
+                ModelState.AddModelError(string.Empty, "Your account has been deactivated.");
                 return View(model);
             }
 
@@ -148,11 +148,11 @@ namespace Linear_v1.Controllers
 
             if (result.IsLockedOut)
             {
-                ModelState.AddModelError(string.Empty, "অ্যাকাউন্ট সাময়িকভাবে লক। পরে চেষ্টা করুন।");
+                ModelState.AddModelError(string.Empty, "Your account is temporarily locked. Please try again later.");
                 return View(model);
             }
 
-            ModelState.AddModelError(string.Empty, "ইমেইল বা পাসওয়ার্ড ভুল।");
+            ModelState.AddModelError(string.Empty, "Invalid email or password.");
             return View(model);
         }
 
