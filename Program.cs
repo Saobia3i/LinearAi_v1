@@ -3,12 +3,23 @@ using Linear_v1.Models;
 using Linear_v1.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Database - use SQL Server when connection string is present, otherwise fall back to an in-memory DB for development
+var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(defaultConnection))
+{
+    // No connection string configured; use in-memory DB so app can start in development without throwing
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseInMemoryDatabase("LinearInMemoryDb"));
+}
+else
+{
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlServer(defaultConnection));
+}
 
 // Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -43,48 +54,58 @@ var app = builder.Build();
 // Seed roles and admin
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-
-    // Create roles
-    foreach (var role in new[] { "Admin", "User" })
+    try
     {
-        if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole(role));
-    }
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-    // Create default admin
-    var adminEmail = "admin@linearai.com";
-    if (await userManager.FindByEmailAsync(adminEmail) == null)
-    {
-        var admin = new ApplicationUser
+        // Create roles
+        foreach (var role in new[] { "Admin", "User" })
         {
-            FullName = "Linear Admin",
-            UserName = adminEmail,
-            Email = adminEmail,
-            EmailConfirmed = true,
-            IsActive = true
-        };
-        var result = await userManager.CreateAsync(admin, "Admin@123");
-        if (result.Succeeded)
-            await userManager.AddToRoleAsync(admin, "Admin");
-    }
+            if (!await roleManager.RoleExistsAsync(role))
+                await roleManager.CreateAsync(new IdentityRole(role));
+        }
 
-    // Create test user for development
-    var testUserEmail = "test@linearai.com";
-    if (await userManager.FindByEmailAsync(testUserEmail) == null)
-    {
-        var testUser = new ApplicationUser
+        // Create default admin
+        var adminEmail = "admin@linearai.com";
+        if (await userManager.FindByEmailAsync(adminEmail) == null)
         {
-            FullName = "Test User",
-            UserName = testUserEmail,
-            Email = testUserEmail,
-            EmailConfirmed = true,
-            IsActive = true
-        };
-        var result = await userManager.CreateAsync(testUser, "Test@123");
-        if (result.Succeeded)
-            await userManager.AddToRoleAsync(testUser, "User");
+            var admin = new ApplicationUser
+            {
+                FullName = "Linear Admin",
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true,
+                IsActive = true
+            };
+            var result = await userManager.CreateAsync(admin, "Admin@123");
+            if (result.Succeeded)
+                await userManager.AddToRoleAsync(admin, "Admin");
+        }
+
+        // Create test user for development
+        var testUserEmail = "test@linearai.com";
+        if (await userManager.FindByEmailAsync(testUserEmail) == null)
+        {
+            var testUser = new ApplicationUser
+            {
+                FullName = "Test User",
+                UserName = testUserEmail,
+                Email = testUserEmail,
+                EmailConfirmed = true,
+                IsActive = true
+            };
+            var result = await userManager.CreateAsync(testUser, "Test@123");
+            if (result.Succeeded)
+                await userManager.AddToRoleAsync(testUser, "User");
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding the database.");
+        // If you want the app to fail fast when DB isn't configured, rethrow here.
+        // throw;
     }
 }
 

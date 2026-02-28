@@ -59,5 +59,20 @@ namespace Linear_v1.Controllers
             TempData["Success"] = "Payment status আপডেট হয়েছে।";
             return RedirectToAction("Orders");
         }
+
+        // ✅ NEW: POST /Admin/UpdateOrderStatus
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateOrderStatus(int orderId, OrderStatus status)
+        {
+            var order = await _db.Orders.FindAsync(orderId);
+            if (order == null) return NotFound();
+
+            order.OrderStatus = status;
+            await _db.SaveChangesAsync();
+
+            TempData["Success"] = "Order status updated successfully.";
+            return RedirectToAction("Orders");
+        }
     }
 }

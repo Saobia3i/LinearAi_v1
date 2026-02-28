@@ -35,6 +35,20 @@ namespace Linear_v1.Controllers
             return View(products);
         }
 
+        // ✅ NEW: GET /User/Orders (User can see admin status)
+        public async Task<IActionResult> Orders()
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            var orders = await _db.Orders
+                .Include(o => o.Product)
+                .Where(o => o.UserId == user!.Id)
+                .OrderByDescending(o => o.OrderDate)
+                .ToListAsync();
+
+            return View(orders);
+        }
+
         // POST: /User/BuyProduct
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -50,7 +64,10 @@ namespace Linear_v1.Controllers
             {
                 UserId = user!.Id,
                 ProductId = productId,
-                PaymentStatus = PaymentStatus.Pending
+                PaymentStatus = PaymentStatus.Pending,
+
+                // ✅ NEW
+                OrderStatus = OrderStatus.Pending
             };
 
             _db.Orders.Add(order);

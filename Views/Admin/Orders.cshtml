@@ -23,6 +23,10 @@
                 <th>Price</th>
                 <th>Date</th>
                 <th>Payment Status</th>
+
+                <!-- ✅ NEW -->
+                <th>Order Status</th>
+
                 <th>Action</th>
             </tr>
         </thead>
@@ -35,12 +39,24 @@
                     <td>@o.Product.Title</td>
                     <td>৳ @o.Product.Price.ToString("N0")</td>
                     <td>@o.OrderDate.ToString("dd/MM/yyyy")</td>
+
                     <td>
                         <span class="badge @(o.PaymentStatus == Linear_v1.Models.PaymentStatus.Paid ? "badge-success" : "badge-warning")">
                             @(o.PaymentStatus == Linear_v1.Models.PaymentStatus.Paid ? "Paid" : "Pending")
                         </span>
                     </td>
+
+                    <!-- ✅ NEW: show order status -->
                     <td>
+                        <span class="badge @(o.OrderStatus == Linear_v1.Models.OrderStatus.Confirmed ? "badge-success"
+                            : o.OrderStatus == Linear_v1.Models.OrderStatus.Cancelled ? "badge-danger"
+                            : "badge-warning")">
+                            @o.OrderStatus.ToString()
+                        </span>
+                    </td>
+
+                    <td>
+                        <!-- Existing: Payment status -->
                         <form asp-action="UpdatePaymentStatus" method="post" style="display:inline;">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="orderId" value="@o.Id" />
@@ -54,6 +70,24 @@
                                 <input type="hidden" name="status" value="0" />
                                 <button type="submit" class="btn-sm btn-warning">Mark Pending</button>
                             }
+                        </form>
+
+                        <!-- ✅ NEW: Order decision status -->
+                        <form asp-action="UpdateOrderStatus" method="post" style="display:inline; margin-left:8px;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="orderId" value="@o.Id" />
+
+                            <button type="submit" name="status" value="Confirmed" class="btn-sm btn-success">
+                                Confirm
+                            </button>
+
+                            <button type="submit" name="status" value="Cancelled" class="btn-sm btn-danger">
+                                Cancel
+                            </button>
+
+                            <button type="submit" name="status" value="Pending" class="btn-sm btn-warning">
+                                Pending
+                            </button>
                         </form>
                     </td>
                 </tr>

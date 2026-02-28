@@ -1,0 +1,50 @@
+@model List<Linear_v1.Models.Order>
+@{
+    ViewData["Title"] = "My Orders";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="page-header">
+    <h2>My Orders</h2>
+    <span class="badge">@Model.Count Orders</span>
+</div>
+
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Date</th>
+                <th>Payment</th>
+                <th>Order Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model)
+            {
+                <tr>
+                    <td>@o.Id</td>
+                    <td>@o.Product.Title</td>
+                    <td>৳ @o.Product.Price.ToString("N0")</td>
+                    <td>@o.OrderDate.ToString("dd/MM/yyyy")</td>
+
+                    <td>
+                        <span class="badge @(o.PaymentStatus == Linear_v1.Models.PaymentStatus.Paid ? "badge-success" : "badge-warning")">
+                            @o.PaymentStatus.ToString()
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="badge @(o.OrderStatus == Linear_v1.Models.OrderStatus.Confirmed ? "badge-success"
+                            : o.OrderStatus == Linear_v1.Models.OrderStatus.Cancelled ? "badge-danger"
+                            : "badge-warning")">
+                            @o.OrderStatus.ToString()
+                        </span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

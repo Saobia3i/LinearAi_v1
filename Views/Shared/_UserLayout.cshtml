@@ -12,8 +12,27 @@
     <nav class="sidebar">
         <div class="sidebar-brand">Linear <span class="accent">AI</span></div>
         <ul class="nav-links">
-            <li><a asp-controller="User" asp-action="Index" class="@(ViewData["Title"]?.ToString() == "My Account" ? "active" : "")">👤 Account</a></li>
-            <li><a asp-controller="User" asp-action="Products" class="@(ViewData["Title"]?.ToString() == "Products" ? "active" : "")">🛒 Products</a></li>
+            <li>
+                <a asp-controller="User" asp-action="Index"
+                   class="@(ViewData["Title"]?.ToString() == "My Account" ? "active" : "")">
+                    👤 Account
+                </a>
+            </li>
+
+            <li>
+                <a asp-controller="User" asp-action="Products"
+                   class="@(ViewData["Title"]?.ToString() == "Products" ? "active" : "")">
+                    🛒 Products
+                </a>
+            </li>
+
+            <!-- ✅ NEW -->
+            <li>
+                <a asp-controller="User" asp-action="Orders"
+                   class="@(ViewData["Title"]?.ToString() == "My Orders" ? "active" : "")">
+                    📦 My Orders
+                </a>
+            </li>
         </ul>
     </nav>
     <main class="main-content">
