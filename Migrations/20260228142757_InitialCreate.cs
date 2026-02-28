@@ -4,8 +4,6 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
-
 namespace Linear_v1.Migrations
 {
     /// <inheritdoc />
@@ -205,16 +203,6 @@ namespace Linear_v1.Migrations
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.InsertData(
-                table: "Products",
-                columns: new[] { "Id", "CreatedAt", "IsActive", "Price", "ShortDescription", "Title" },
-                values: new object[,]
-                {
-                    { 1, new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), true, 999m, "Basic AI assistant plan", "Linear Basic" },
-                    { 2, new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), true, 2499m, "Advanced AI with priority support", "Linear Pro" },
-                    { 3, new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), true, 7999m, "Full access for teams", "Linear Enterprise" }
                 });
 
             migrationBuilder.CreateIndex(
