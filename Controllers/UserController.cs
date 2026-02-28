@@ -65,15 +65,16 @@ namespace Linear_v1.Controllers
                 UserId = user!.Id,
                 ProductId = productId,
                 PaymentStatus = PaymentStatus.Pending,
+                OrderDate = DateTime.UtcNow
 
-                // ✅ NEW
-                OrderStatus = OrderStatus.Pending
+                // TODO: Add OrderStatus = OrderStatus.Pending after migration
+                // OrderStatus = OrderStatus.Pending
             };
 
             _db.Orders.Add(order);
             await _db.SaveChangesAsync();
 
-            TempData["Success"] = $"'{product.Title}' অর্ডার সফল! পেমেন্ট pending আছে।";
+            TempData["Success"] = $"'{product.Title}' Order done! Payment is pending.";
             return RedirectToAction("Products");
         }
     }

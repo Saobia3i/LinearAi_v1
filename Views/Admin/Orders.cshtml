@@ -46,6 +46,7 @@
                         </span>
                     </td>
 
+                    @* TODO: Uncomment after adding OrderStatus migration
                     <!-- ✅ NEW: show order status -->
                     <td>
                         <span class="badge @(o.OrderStatus == Linear_v1.Models.OrderStatus.Confirmed ? "badge-success"
@@ -54,6 +55,7 @@
                             @o.OrderStatus.ToString()
                         </span>
                     </td>
+                    *@
 
                     <td>
                         <!-- Existing: Payment status -->

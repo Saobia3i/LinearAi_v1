@@ -17,9 +17,9 @@
 
         public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
 
-        // ✅ NEW: default is Pending
-        public OrderStatus OrderStatus { get; set; } = OrderStatus.Pending;
+        // TODO: Uncomment after creating migration for OrderStatus column
+        // public OrderStatus OrderStatus { get; set; } = OrderStatus.Pending;
 
-        public DateTime OrderDate { get; set; }
+        public DateTime OrderDate { get; set; } = DateTime.UtcNow;
     }
 }
