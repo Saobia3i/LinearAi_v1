@@ -19,7 +19,7 @@ namespace Linear_v1.Controllers
             _db = db;
         }
 
-        // GET: /Admin/Index — Admin Account Page
+        // GET: /Admin/Index
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -56,8 +56,77 @@ namespace Linear_v1.Controllers
             order.PaymentStatus = status;
             await _db.SaveChangesAsync();
 
-            TempData["Success"] = "Payment status আপডেট হয়েছে।";
+            TempData["Success"] = "Payment status updated.";
             return RedirectToAction("Orders");
+        }
+
+        // GET: /Admin/Products
+        public async Task<IActionResult> Products()
+        {
+            var products = await _db.Products.ToListAsync();
+            return View(products);
+        }
+
+        // GET: /Admin/AddProduct
+        public IActionResult AddProduct() => View();
+
+        // POST: /Admin/AddProduct
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddProduct(Product model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            model.CreatedAt = DateTime.UtcNow;
+            model.IsActive = true;
+            _db.Products.Add(model);
+            await _db.SaveChangesAsync();
+
+            TempData["Success"] = "Product added successfully.";
+            return RedirectToAction("Products");
+        }
+
+        // GET: /Admin/EditProduct/5
+        public async Task<IActionResult> EditProduct(int id)
+        {
+            var product = await _db.Products.FindAsync(id);
+            if (product == null) return NotFound();
+            return View(product);
+        }
+
+        // POST: /Admin/EditProduct
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditProduct(Product model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            var product = await _db.Products.FindAsync(model.Id);
+            if (product == null) return NotFound();
+
+            product.Title = model.Title;
+            product.ShortDescription = model.ShortDescription;
+            product.Price = model.Price;
+            product.IsActive = model.IsActive;
+
+            await _db.SaveChangesAsync();
+            TempData["Success"] = "Product updated successfully.";
+            return RedirectToAction("Products");
+        }
+
+        // POST: /Admin/DeleteProduct
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteProduct(int id)
+        {
+            var product = await _db.Products.FindAsync(id);
+            if (product == null) return NotFound();
+
+            product.IsActive = false;
+            await _db.SaveChangesAsync();
+
+            TempData["Success"] = "Product deleted successfully.";
+            return RedirectToAction("Products");
         }
     }
 }

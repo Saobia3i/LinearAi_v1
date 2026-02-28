@@ -35,35 +35,9 @@ namespace Linear_v1.Data
                 .HasForeignKey(o => o.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Entity<Product>().HasData(
-                new Product
-                {
-                    Id = 1,
-                    Title = "Linear Basic",
-                    ShortDescription = "Basic AI assistant plan",
-                    Price = 999,
-                    IsActive = true,
-                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                },
-                new Product
-                {
-                    Id = 2,
-                    Title = "Linear Pro",
-                    ShortDescription = "Advanced AI with priority support",
-                    Price = 2499,
-                    IsActive = true,
-                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                },
-                new Product
-                {
-                    Id = 3,
-                    Title = "Linear Enterprise",
-                    ShortDescription = "Full access for teams",
-                    Price = 7999,
-                    IsActive = true,
-                    CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                }
-            );
+           
+               
+                  
         }
     }
     }

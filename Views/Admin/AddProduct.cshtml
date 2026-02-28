@@ -1,0 +1,44 @@
+﻿@model Linear_v1.Models.Product
+@{
+    ViewData["Title"] = "Add Product"; Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <h2>Add New Product</h2>
+</div>
+
+<div class="card" style="max-width:600px;">
+    <form asp-action="AddProduct" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="All" class="alert-error"></div>
+
+        <div class="form-group">
+            <label asp-for="Title">Product Title</label>
+            <input asp-for="Title" class="form-input" placeholder="Enter product title" />
+            <span asp-validation-for="Title" class="field-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ShortDescription">Short Description</label>
+            <textarea asp-for="ShortDescription" class="form-input" rows="3"
+                      placeholder="Enter short description"></textarea>
+            <span asp-validation-for="ShortDescription" class="field-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Price">Price (৳)</label>
+            <input asp-for="Price" class="form-input" type="number" placeholder="0" />
+            <span asp-validation-for="Price" class="field-error"></span>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:8px;">
+            <button type="submit" class="btn-primary" style="width:auto;padding:10px 28px;">
+                Add Product
+            </button>
+            <a asp-action="Products" class="btn-danger"
+               style="padding:10px 20px;text-decoration:none;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>

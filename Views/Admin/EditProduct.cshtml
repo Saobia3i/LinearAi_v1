@@ -1,0 +1,51 @@
+﻿@model Linear_v1.Models.Product
+@{
+    ViewData["Title"] = "Edit Product"; Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <h2>Edit Product</h2>
+</div>
+
+<div class="card" style="max-width:600px;">
+    <form asp-action="EditProduct" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="All" class="alert-error"></div>
+
+        <div class="form-group">
+            <label asp-for="Title">Product Title</label>
+            <input asp-for="Title" class="form-input" />
+            <span asp-validation-for="Title" class="field-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ShortDescription">Short Description</label>
+            <textarea asp-for="ShortDescription" class="form-input" rows="3"></textarea>
+            <span asp-validation-for="ShortDescription" class="field-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Price">Price (৳)</label>
+            <input asp-for="Price" class="form-input" type="number" />
+            <span asp-validation-for="Price" class="field-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;color:var(--beige);cursor:pointer;">
+                <input asp-for="IsActive" type="checkbox" style="accent-color:var(--accent-red);width:16px;height:16px;" />
+                Active (visible to users)
+            </label>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:8px;">
+            <button type="submit" class="btn-primary" style="width:auto;padding:10px 28px;">
+                Save Changes
+            </button>
+            <a asp-action="Products" class="btn-danger"
+               style="padding:10px 20px;text-decoration:none;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
