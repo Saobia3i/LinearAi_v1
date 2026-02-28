@@ -50,7 +50,8 @@ namespace Linear_v1.Controllers
             {
                 UserId = user!.Id,
                 ProductId = productId,
-                PaymentStatus = PaymentStatus.Pending
+                PaymentStatus = PaymentStatus.Pending,
+                OrderDate = DateTime.UtcNow
             };
 
             _db.Orders.Add(order);
