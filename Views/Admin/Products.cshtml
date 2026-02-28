@@ -1,13 +1,10 @@
 ﻿@model List<Linear_v1.Models.Product>
 @{
-    ViewData["Title"] = "Products"; Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Products"; Layout = "~/Views/Shared/_UserLayout.cshtml";
 }
 
 <div class="page-header">
-    <h2>Product Management</h2>
-    <a asp-action="AddProduct" class="btn-primary" style="width:auto;padding:10px 20px;text-decoration:none;">
-        + Add Product
-    </a>
+    <h2>Products</h2>
 </div>
 
 @if (TempData["Success"] != null)
@@ -15,46 +12,18 @@
     <div class="alert-success">@TempData["Success"]</div>
 }
 
-<div class="card">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Title</th>
-                <th>Description</th>
-                <th>Price</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var p in Model)
-            {
-                <tr>
-                    <td>@p.Id</td>
-                    <td>@p.Title</td>
-                    <td>@p.ShortDescription</td>
-                    <td>৳ @p.Price.ToString("N0")</td>
-                    <td>
-                        <span class="badge @(p.IsActive ? "badge-success" : "badge-warning")">
-                            @(p.IsActive ? "Active" : "Inactive")
-                        </span>
-                    </td>
-                    <td style="display:flex;gap:8px;">
-                        <a asp-action="EditProduct" asp-route-id="@p.Id" class="btn-sm btn-warning">
-                            Edit
-                        </a>
-                        <form asp-action="DeleteProduct" method="post" style="display:inline;">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@p.Id" />
-                            <button type="submit" class="btn-sm btn-danger"
-                                    onclick="return confirm('Delete this product?')">
-                                Delete
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+<div class="products-grid">
+    @foreach (var p in Model)
+    {
+        <div class="product-card">
+            <h3 class="product-title">@p.Title</h3>
+            <p class="product-desc">@p.ShortDescription</p>
+            <div class="product-price">৳ @p.Price.ToString("N0")</div>
+            <form asp-action="BuyProduct" asp-controller="User" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="productId" value="@p.Id" />
+                <button type="submit" class="btn-buy">Buy</button>
+            </form>
+        </div>
+    }
 </div>

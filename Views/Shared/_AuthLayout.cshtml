@@ -8,6 +8,74 @@
     <link rel="stylesheet" href="~/css/auth.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <style>
+    /* responsive-ui-overrides */
+:root { --ui-radius: 18px; }
+
+.auth-container{
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: clamp(16px, 4vw, 32px);
+}
+
+.auth-card{
+    width: min(520px, 100%);
+    border-radius: var(--ui-radius);
+    padding: clamp(18px, 3vw, 28px);
+    box-shadow: 0 14px 40px rgba(0,0,0,.10);
+    border: 1px solid rgba(0,0,0,.07);
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 10px;
+    margin-bottom: 12px;
+    text-align:center;
+    flex-wrap: wrap;
+}
+
+.logo-sm{ width: 42px; height: 42px; object-fit: contain; }
+
+.form-group{ margin-bottom: 14px; }
+.form-group label{ display:block; margin-bottom: 6px; }
+.form-input{
+    width:100%;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,.18);
+    outline: none;
+}
+.form-input:focus{
+    box-shadow: 0 0 0 4px rgba(0,0,0,.08);
+}
+
+.btn-primary{
+    width:100%;
+    padding: 12px 14px;
+    border-radius: 14px;
+}
+
+.form-group-inline{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    margin: 10px 0 16px;
+    flex-wrap: wrap;
+}
+
+.alert-info,.alert-error,.alert-success{
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin: 10px 0 14px;
+}
+
+.auth-link{ margin-top: 14px; text-align:center; }
+
+.text-center{ text-align:center; }
+    </style>
 </head>
 <body class="auth-body">
     <div class="auth-container">
