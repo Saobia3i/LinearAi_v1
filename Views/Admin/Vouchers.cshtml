@@ -1,0 +1,66 @@
+﻿@model List<Linear_v1.Models.Voucher>
+@{
+    ViewData["Title"] = "Vouchers"; Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <h2>🎟️ Voucher Management</h2>
+    <a asp-action="AddVoucher" class="btn-primary"
+       style="width:auto;padding:10px 20px;text-decoration:none;">
+        + New Voucher
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-success">@TempData["Success"]</div>
+}
+
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Discount</th>
+                <th>Used</th>
+                <th>Limit</th>
+                <th>Expiry</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var v in Model)
+            {
+                <tr>
+                    <td style="font-weight:600;color:var(--beige-light);">
+                        @v.Code
+                    </td>
+                    <td style="color:var(--accent-red-glow);">@v.DiscountPercent%</td>
+                    <td>@v.UsedCount</td>
+                    <td>@(v.UsageLimit.HasValue? v.UsageLimit.ToString() : "Unlimited")</td>
+                    <td>
+                        @(v.ExpiryDate.HasValue
+                                            ? v.ExpiryDate.Value.ToString("dd/MM/yyyy")
+                                            : "No expiry")
+                    </td>
+                    <td>
+                        <span class="badge @(v.IsActive ? "badge-success" : "badge-warning")">
+                            @(v.IsActive ? "Active" : "Inactive")
+                        </span>
+                    </td>
+                    <td>
+                        <form asp-action="ToggleVoucher" method="post" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@v.Id" />
+                            <button type="submit"
+                                    class="btn-sm @(v.IsActive ? "btn-warning" : "btn-success")">
+                                @(v.IsActive ? "Deactivate" : "Activate")
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

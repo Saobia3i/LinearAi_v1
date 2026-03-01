@@ -1,0 +1,51 @@
+﻿@model Linear_v1.Models.Voucher
+@{
+    ViewData["Title"] = "Add Voucher"; Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <h2>🎟️ Create Voucher</h2>
+</div>
+
+<div class="card" style="max-width:500px;">
+    <form asp-action="AddVoucher" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="All" class="alert-error"></div>
+
+        <div class="form-group">
+            <label>Voucher Code</label>
+            <input asp-for="Code" class="form-input"
+                   placeholder="e.g. SAVE20" style="text-transform:uppercase;" />
+            <span asp-validation-for="Code" class="field-error"></span>
+        </div>
+        <div class="form-group">
+            <label>Discount (%)</label>
+            <input asp-for="DiscountPercent" class="form-input" type="number"
+                   placeholder="e.g. 20" step="0.01" min="1" max="100" />
+            <span asp-validation-for="DiscountPercent" class="field-error"></span>
+        </div>
+        <div class="form-group">
+            <label>Expiry Date (optional)</label>
+            <input asp-for="ExpiryDate" class="form-input" type="date" />
+        </div>
+        <div class="form-group">
+            <label>Usage Limit (optional)</label>
+            <input asp-for="UsageLimit" class="form-input" type="number"
+                   placeholder="Leave empty for unlimited" min="1" />
+            <small style="color:var(--text-muted);">
+                Empty = unlimited uses
+            </small>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:8px;">
+            <button type="submit" class="btn-primary"
+                    style="width:auto;padding:10px 28px;">
+                Create Voucher
+            </button>
+            <a asp-action="Vouchers" class="btn-danger"
+               style="padding:10px 20px;text-decoration:none;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>

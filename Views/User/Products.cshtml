@@ -5,11 +5,22 @@
 
 <div class="page-header">
     <h2>Products</h2>
+    <a asp-action="Cart" class="btn-cart">
+        🛒 Cart (@(ViewBag.CartCount ?? 0))
+    </a>
 </div>
 
 @if (TempData["Success"] != null)
 {
     <div class="alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Info"] != null)
+{
+    <div class="alert-info">@TempData["Info"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert-error">@TempData["Error"]</div>
 }
 
 <div class="products-grid">
@@ -19,10 +30,56 @@
             <h3 class="product-title">@p.Title</h3>
             <p class="product-desc">@p.ShortDescription</p>
             <div class="product-price">৳ @p.Price.ToString("N0")</div>
-            <form asp-action="BuyProduct" asp-controller="User" method="post">
+
+            <form asp-action="AddToCart" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="productId" value="@p.Id" />
-                <button type="submit" class="btn-buy">Buy</button>
+
+                @if (p.Subscriptions != null && p.Subscriptions.Any())
+                {
+                    <div class="subscription-plans">
+                        <p class="plan-label">Select Plan:</p>
+                        <div class="plan-options">
+                            @foreach (var sub in p.Subscriptions.OrderBy(s => s.DurationMonths))
+                            {
+                                <label class="plan-option">
+                                    <input type="radio"
+                                           name="durationMonths"
+                                           value="@sub.DurationMonths"
+                                           @(sub.DurationMonths == p.Subscriptions
+                                                                          .OrderBy(s => s.DurationMonths)
+                                                                          .First().DurationMonths ? "checked" : "") />
+                                    <span class="plan-box">
+                                        <span class="plan-month">
+                                            @sub.DurationMonths mo.
+                                        </span>
+                                        @if (sub.DiscountPercent > 0)
+                                        {
+                                            <span class="plan-badge">
+                                                @sub.DiscountPercent% OFF
+                                            </span>
+                                        }
+                                        <span class="plan-price">
+                                            ৳@sub.FinalPrice.ToString("N0")
+                                        </span>
+                                        @if (sub.DiscountPercent > 0)
+                                        {
+                                            <span class="plan-original">
+                                                ৳@sub.Price.ToString("N0")
+                                            </span>
+                                        }
+                                    </span>
+                                </label>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <input type="hidden" name="durationMonths" value="1" />
+                }
+
+                <button type="submit" class="btn-buy">Add to Cart 🛒</button>
             </form>
         </div>
     }
