@@ -6,9 +6,18 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database
+// Database with retry policy and error handling
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(5),
+            errorCodesToAdd: null);
+    });
+});
 
 // Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -36,56 +45,75 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
-// Seed roles and admin
-using (var scope = app.Services.CreateScope())
+// Seed roles and admin with error handling
+try
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-
-    // Create roles
-    foreach (var role in new[] { "Admin", "User" })
+    using (var scope = app.Services.CreateScope())
     {
-        if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole(role));
-    }
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-    // Create default admin
-    var adminEmail = "admin@linearai.com";
-    if (await userManager.FindByEmailAsync(adminEmail) == null)
-    {
-        var admin = new ApplicationUser
+        // Check database connectivity first
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await context.Database.CanConnectAsync();
+
+        // Create roles
+        foreach (var role in new[] { "Admin", "User" })
         {
-            FullName = "Linear Admin",
-            UserName = adminEmail,
-            Email = adminEmail,
-            EmailConfirmed = true,
-            IsActive = true
-        };
-        var result = await userManager.CreateAsync(admin, "Admin@123");
-        if (result.Succeeded)
-            await userManager.AddToRoleAsync(admin, "Admin");
-    }
+            if (!await roleManager.RoleExistsAsync(role))
+                await roleManager.CreateAsync(new IdentityRole(role));
+        }
 
-    // Create test user for development
-    var testUserEmail = "test@linearai.com";
-    if (await userManager.FindByEmailAsync(testUserEmail) == null)
-    {
-        var testUser = new ApplicationUser
+        // Create default admin
+        var adminEmail = "admin@linearai.com";
+        if (await userManager.FindByEmailAsync(adminEmail) == null)
         {
-            FullName = "Test User",
-            UserName = testUserEmail,
-            Email = testUserEmail,
-            EmailConfirmed = true,
-            IsActive = true
-        };
-        var result = await userManager.CreateAsync(testUser, "Test@123");
-        if (result.Succeeded)
-            await userManager.AddToRoleAsync(testUser, "User");
+            var admin = new ApplicationUser
+            {
+                FullName = "Linear Admin",
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true,
+                IsActive = true
+            };
+            var result = await userManager.CreateAsync(admin, "Admin@123");
+            if (result.Succeeded)
+                await userManager.AddToRoleAsync(admin, "Admin");
+        }
+
+        // Create test user for development
+        var testUserEmail = "test@linearai.com";
+        if (await userManager.FindByEmailAsync(testUserEmail) == null)
+        {
+            var testUser = new ApplicationUser
+            {
+                FullName = "Test User",
+                UserName = testUserEmail,
+                Email = testUserEmail,
+                EmailConfirmed = true,
+                IsActive = true
+            };
+            var result = await userManager.CreateAsync(testUser, "Test@123");
+            if (result.Succeeded)
+                await userManager.AddToRoleAsync(testUser, "User");
+        }
     }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Database seeding failed: {ex.Message}");
+    
 }
 
 app.UseHttpsRedirection();
@@ -93,6 +121,7 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseSession();
 
 app.MapControllerRoute(
     name: "default",

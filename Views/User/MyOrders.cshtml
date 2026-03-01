@@ -1,0 +1,78 @@
+﻿@model List<Linear_v1.Models.Order>
+@{
+    ViewData["Title"] = "My Orders"; Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="page-header">
+    <h2>📦 My Orders</h2>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-success">@TempData["Success"]</div>
+}
+
+<div class="card">
+    @if (!Model.Any())
+    {
+        <p style="color:var(--text-muted);text-align:center;padding:32px;">
+            No orders yet.
+            <a asp-action="Products" style="color:var(--accent-red-glow);">
+                Browse products →
+            </a>
+        </p>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Product</th>
+                    <th>Plan</th>
+                    <th>Original</th>
+                    <th>Discount</th>
+                    <th>Final</th>
+                    <th>Voucher</th>
+                    <th>Status</th>
+                    <th>Expires</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in Model)
+                {
+                    <tr>
+                        <td style="color:var(--text-muted);">@o.Id</td>
+                        <td style="color:var(--beige-light);font-weight:500;">
+                            @o.Product.Title
+                        </td>
+                        <td>@o.DurationMonths mo.</td>
+                        <td>৳@o.OriginalPrice.ToString("N0")</td>
+                        <td style="color:#4ade80;">
+                            @(o.DiscountAmount > 0
+                                                ? $"- ৳{o.DiscountAmount:N0}" : "—")
+                        </td>
+                        <td style="color:var(--accent-red-glow);font-weight:700;">
+                            ৳@o.FinalPrice.ToString("N0")
+                        </td>
+                        <td style="color:var(--beige);">
+                            @(string.IsNullOrEmpty(o.VoucherCode) ? "—" : o.VoucherCode)
+                        </td>
+                        <td>
+                            <span class="badge
+                                        @(o.PaymentStatus == Linear_v1.Models.PaymentStatus.Paid
+                                                                      ? "badge-success" : "badge-warning")">
+                                @o.PaymentStatus
+                            </span>
+                        </td>
+                        <td style="color:var(--text-muted);font-size:13px;">
+                            @(o.SubscriptionEndDate.HasValue
+                                                ? o.SubscriptionEndDate.Value.ToString("dd/MM/yy")
+                                                : "—")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

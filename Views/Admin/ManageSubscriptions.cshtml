@@ -1,0 +1,95 @@
+﻿@model Linear_v1.Models.Product
+@{
+    ViewData["Title"] = "Manage Subscriptions"; Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <h2>Subscription Plans — @Model.Title</h2>
+    <a asp-action="Products" class="btn-danger"
+       style="padding:8px 16px;text-decoration:none;">← Back</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-success">@TempData["Success"]</div>
+}
+
+<div class="card" style="margin-bottom:24px;">
+    <h3 style="margin-bottom:20px;color:var(--beige-light);">
+        Current Plans
+    </h3>
+    @if (!Model.Subscriptions.Any())
+    {
+        <p style="color:var(--text-muted);">No plans yet. Add below.</p>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Duration</th>
+                    <th>Base Price</th>
+                    <th>Discount</th>
+                    <th>Final Price</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var sub in Model.Subscriptions.OrderBy(s => s.DurationMonths))
+                {
+                    <tr>
+                        <td>@sub.DurationMonths months</td>
+                        <td>৳@sub.Price.ToString("N0")</td>
+                        <td>@sub.DiscountPercent%</td>
+                        <td style="color:var(--accent-red-glow);font-weight:600;">
+                            ৳@sub.FinalPrice.ToString("N0")
+                        </td>
+                        <td>
+                            <form asp-action="DeleteSubscription" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@sub.Id" />
+                                <button type="submit" class="btn-sm btn-danger"
+                                        onclick="return confirm('Delete this plan?')">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<div class="card" style="max-width:500px;">
+    <h3 style="margin-bottom:20px;color:var(--beige-light);">Add / Update Plan</h3>
+    <form asp-action="SaveSubscription" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="productId" value="@Model.Id" />
+
+        <div class="form-group">
+            <label>Duration</label>
+            <select name="durationMonths" class="form-input">
+                <option value="3">3 Months</option>
+                <option value="6">6 Months</option>
+                <option value="12">12 Months</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Base Price (৳)</label>
+            <input type="number" name="price" class="form-input"
+                   placeholder="e.g. 2999" step="0.01" />
+        </div>
+        <div class="form-group">
+            <label>Discount (%)</label>
+            <input type="number" name="discountPercent" class="form-input"
+                   placeholder="e.g. 10" step="0.01" min="0" max="100" value="0" />
+            <small style="color:var(--text-muted);">
+                0 = no discount, 10 = 10% off, 20 = 20% off
+            </small>
+        </div>
+        <button type="submit" class="btn-primary" style="width:auto;padding:10px 28px;">
+            Save Plan
+        </button>
+    </form>
+</div>

@@ -44,6 +44,10 @@
                         <a asp-action="EditProduct" asp-route-id="@p.Id" class="btn-sm btn-warning">
                             Edit
                         </a>
+                        <a asp-action="ManageSubscriptions" asp-route-productId="@p.Id"
+                           class="btn-sm btn-success">
+                            📅 Plans
+                        </a>
                         <form asp-action="DeleteProduct" method="post" style="display:inline;">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="id" value="@p.Id" />
