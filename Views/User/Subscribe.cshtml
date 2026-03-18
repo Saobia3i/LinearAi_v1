@@ -1,0 +1,62 @@
+@model Linear_v1.Models.Product
+@{
+    ViewData["Title"] = "Subscribe";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+
+<div class="page-header">
+    <h2>@Model.Title</h2>
+    <a asp-action="Products" class="btn-cart">← Back to Products</a>
+</div>
+
+<p class="product-desc" style="margin-bottom:18px;">@Model.ShortDescription</p>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert-error">@TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Info"] != null)
+{
+    <div class="alert-info">@TempData["Info"]</div>
+}
+
+@if (Model.Subscriptions != null && Model.Subscriptions.Any())
+{
+    <div class="products-grid">
+        @foreach (var sub in Model.Subscriptions.OrderBy(s => s.DurationMonths))
+        {
+            <div class="product-card">
+                <h3 class="product-title">@sub.DurationMonths Month Plan</h3>
+
+                @if (sub.DiscountPercent > 0)
+                {
+                    <p class="plan-badge" style="display:inline-block; margin-bottom:12px;">@sub.DiscountPercent% OFF</p>
+                }
+
+                <p class="product-price">৳ @sub.FinalPrice.ToString("N0")</p>
+
+                @if (sub.DiscountPercent > 0)
+                {
+                    <p style="opacity:.7; text-decoration:line-through;">৳ @sub.Price.ToString("N0")</p>
+                }
+
+                <form asp-action="AddToCart" method="post" style="margin-top:12px;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="productId" value="@Model.Id" />
+                    <input type="hidden" name="durationMonths" value="@sub.DurationMonths" />
+                    <button type="submit" class="btn-buy">Add to Cart 🛒</button>
+                </form>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="card text-center" style="padding:30px;">
+        <p>No active subscriptions available for this product.</p>
+    </div>
+}

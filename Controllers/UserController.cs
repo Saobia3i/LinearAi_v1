@@ -24,12 +24,66 @@ namespace Linear_v1.Controllers
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
-            return View(user);
+            ViewBag.CartCount = GetCart().Count;
+
+            var products = await _db.Products
+                .Where(p => p.IsActive)
+                .Include(p => p.Subscriptions.Where(s => s.IsActive))
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+
+            var voucher = await _db.Vouchers
+                .Where(v => v.IsActive &&
+                            (!v.ExpiryDate.HasValue || v.ExpiryDate.Value > DateTime.UtcNow) &&
+                            (!v.UsageLimit.HasValue || v.UsedCount < v.UsageLimit.Value))
+                .OrderByDescending(v => v.DiscountPercent)
+                .Select(v => new VoucherLite
+                {
+                    Id = v.Id,
+                    Code = v.Code,
+                    DiscountPercent = v.DiscountPercent,
+                    UsageLimit = v.UsageLimit,
+                    UsedCount = v.UsedCount,
+                    IsActive = v.IsActive,
+                    ExpiryDate = v.ExpiryDate
+                })
+                .FirstOrDefaultAsync();
+
+            var model = new UserLandingViewModel
+            {
+                User = user,
+                LatestProducts = products.Take(3).ToList(),
+                FeaturedProducts = products.Take(8).ToList(),
+                MaxVoucherDiscountPercent = voucher?.DiscountPercent,
+                FeaturedVoucherCode = voucher?.Code
+            };
+
+            return View(model);
+        }
+
+        // GET: /User/Subscribe/5
+        public async Task<IActionResult> Subscribe(int id)
+        {
+            ViewBag.CartCount = GetCart().Count;
+
+            var product = await _db.Products
+                .Where(p => p.Id == id && p.IsActive)
+                .Include(p => p.Subscriptions.Where(s => s.IsActive))
+                .FirstOrDefaultAsync();
+
+            if (product == null)
+            {
+                return NotFound();
+            }
+
+            return View(product);
         }
 
         // GET: /User/Products
         public async Task<IActionResult> Products()
         {
+            ViewBag.CartCount = GetCart().Count;
+
             var products = await _db.Products
                 .Where(p => p.IsActive)
                 .Include(p => p.Subscriptions.Where(s => s.IsActive))
@@ -59,9 +113,9 @@ namespace Linear_v1.Controllers
 
             var cart = GetCart();
 
-            if (cart.Any(c => c.ProductId == productId))
+            if (cart.Any(c => c.ProductId == productId && c.DurationMonths == durationMonths))
             {
-                TempData["Info"] = $"'{product.Title}' is already in cart.";
+                TempData["Info"] = $"'{product.Title}' ({durationMonths} months) is already in cart.";
                 return RedirectToAction("Products");
             }
 
@@ -76,13 +130,14 @@ namespace Linear_v1.Controllers
 
             SaveCart(cart);
             TempData["Success"] = $"'{product.Title}' added to cart!";
-            return RedirectToAction("Products");
+            return RedirectToAction("Cart");
         }
 
         // GET: /User/Cart
         public IActionResult Cart()
         {
             var cart = GetCart();
+            ViewBag.CartCount = cart.Count;
             var model = BuildCheckout(cart, null);
             return View(model);
         }
@@ -93,6 +148,7 @@ namespace Linear_v1.Controllers
         public IActionResult ApplyVoucher(string voucherCode)
         {
             var cart = GetCart();
+            ViewBag.CartCount = cart.Count;
             var model = BuildCheckout(cart, voucherCode?.Trim().ToUpper());
             return View("Cart", model);
         }
@@ -123,18 +179,27 @@ namespace Linear_v1.Controllers
             var user = await _userManager.GetUserAsync(User);
             var checkout = BuildCheckout(cart, voucherCode?.Trim().ToUpper());
 
-            Voucher? appliedVoucher = null; // Track the voucher
+            int? appliedVoucherId = null;
+            var normalizedVoucherCode = voucherCode?.Trim().ToUpper();
 
             // Update voucher usage
-            if (checkout.VoucherValid && !string.IsNullOrEmpty(voucherCode))
+            if (checkout.VoucherValid && !string.IsNullOrEmpty(normalizedVoucherCode))
             {
-                appliedVoucher = await _db.Vouchers
-                    .FirstOrDefaultAsync(v => v.Code == voucherCode.ToUpper());
-                if (appliedVoucher != null)
+                appliedVoucherId = await _db.Vouchers
+                    .Where(v => v.Code == normalizedVoucherCode &&
+                                v.IsActive &&
+                                (!v.ExpiryDate.HasValue || v.ExpiryDate.Value > DateTime.UtcNow) &&
+                                (!v.UsageLimit.HasValue || v.UsedCount < v.UsageLimit.Value))
+                    .Select(v => (int?)v.Id)
+                    .FirstOrDefaultAsync();
+
+                if (appliedVoucherId.HasValue)
                 {
-                    appliedVoucher.UsedCount++;
-                    if (appliedVoucher.UsageLimit.HasValue && appliedVoucher.UsedCount >= appliedVoucher.UsageLimit.Value)
-                        appliedVoucher.IsActive = false;
+                    await _db.Vouchers
+                        .Where(v => v.Id == appliedVoucherId.Value)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(v => v.UsedCount, v => v.UsedCount + 1)
+                            .SetProperty(v => v.IsActive, v => !v.UsageLimit.HasValue || (v.UsedCount + 1) < v.UsageLimit.Value));
                 }
             }
 
@@ -158,8 +223,8 @@ namespace Linear_v1.Controllers
                     DurationMonths = item.DurationMonths,
                     OriginalPrice = item.FinalPrice,
                     FinalPrice = finalAmount,
-                    VoucherId = appliedVoucher?.Id, // Set VoucherId
-                    VoucherCode = checkout.VoucherValid ? voucherCode?.ToUpper() : null,
+                    VoucherId = appliedVoucherId,
+                    VoucherCode = checkout.VoucherValid ? normalizedVoucherCode : null,
                     SubscriptionEndDate = DateTime.UtcNow.AddMonths(item.DurationMonths),
                     PaymentStatus = PaymentStatus.Pending,
                     OrderDate = DateTime.UtcNow
@@ -192,14 +257,37 @@ namespace Linear_v1.Controllers
             return View(orders);
         }
 
+        // GET: /User/Account
+        public async Task<IActionResult> Account()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            return View(user);
+        }
+
         // ── Private Helpers ──
 
         private List<CartItem> GetCart()
         {
             var json = HttpContext.Session.GetString("Cart");
-            return string.IsNullOrEmpty(json)
-                ? new List<CartItem>()
-                : JsonSerializer.Deserialize<List<CartItem>>(json)!;
+            if (string.IsNullOrEmpty(json))
+            {
+                return new List<CartItem>();
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<List<CartItem>>(json) ?? new List<CartItem>();
+            }
+            catch
+            {
+                HttpContext.Session.Remove("Cart");
+                return new List<CartItem>();
+            }
         }
 
         private void SaveCart(List<CartItem> cart) =>
@@ -224,11 +312,23 @@ namespace Linear_v1.Controllers
             // Voucher discount
             if (!string.IsNullOrEmpty(voucherCode))
             {
-                var voucher = _db.Vouchers.FirstOrDefault(v =>
+                var voucher = _db.Vouchers
+                    .Where(v =>
                     v.Code == voucherCode &&
                     v.IsActive &&
                     (!v.ExpiryDate.HasValue || v.ExpiryDate.Value > DateTime.UtcNow) &&
-                    (!v.UsageLimit.HasValue || v.UsedCount < v.UsageLimit.Value));
+                    (!v.UsageLimit.HasValue || v.UsedCount < v.UsageLimit.Value))
+                    .Select(v => new VoucherLite
+                    {
+                        Id = v.Id,
+                        Code = v.Code,
+                        DiscountPercent = v.DiscountPercent,
+                        UsageLimit = v.UsageLimit,
+                        UsedCount = v.UsedCount,
+                        IsActive = v.IsActive,
+                        ExpiryDate = v.ExpiryDate
+                    })
+                    .FirstOrDefault();
 
                 if (voucher != null)
                 {
@@ -248,6 +348,17 @@ namespace Linear_v1.Controllers
                 model.SubTotal - model.BundleDiscount - model.VoucherDiscount);
 
             return model;
+        }
+
+        private sealed class VoucherLite
+        {
+            public int Id { get; set; }
+            public string Code { get; set; } = string.Empty;
+            public decimal DiscountPercent { get; set; }
+            public int? UsageLimit { get; set; }
+            public int UsedCount { get; set; }
+            public bool IsActive { get; set; }
+            public DateTime? ExpiryDate { get; set; }
         }
     }
 }
