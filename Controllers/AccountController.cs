@@ -4,6 +4,9 @@ using Linear_v1.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Npgsql;
 
 namespace Linear_v1.Controllers
 {
@@ -26,6 +29,24 @@ namespace Linear_v1.Controllers
             _logger = logger;
         }
 
+        // GET: /Account
+        [HttpGet]
+        public async Task<IActionResult> Index()
+        {
+            if (!User.Identity!.IsAuthenticated)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null && await _userManager.IsInRoleAsync(user, "Admin"))
+            {
+                return RedirectToAction("Index", "Admin");
+            }
+
+            return RedirectToAction("Index", "User");
+        }
+
         // GET: /Account/Register
         [HttpGet]
         public IActionResult Register() =>
@@ -38,41 +59,73 @@ namespace Linear_v1.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
-            var existingUser = await _userManager.FindByEmailAsync(model.Email);
-            if (existingUser != null)
+            try
             {
-                ModelState.AddModelError("Email", "An account already exists with this email.");
+                var existingUser = await _userManager.FindByEmailAsync(model.Email);
+                if (existingUser != null)
+                {
+                    ModelState.AddModelError("Email", "An account already exists with this email.");
+                    return View(model);
+                }
+
+                var user = new ApplicationUser
+                {
+                    FullName = model.FullName,
+                    UserName = model.Email,
+                    Email = model.Email,
+                    EmailConfirmed = false
+                };
+
+                var result = await _userManager.CreateAsync(user, model.Password);
+                if (!result.Succeeded)
+                {
+                    foreach (var err in result.Errors)
+                        ModelState.AddModelError(string.Empty, err.Description);
+                    return View(model);
+                }
+
+                await _userManager.AddToRoleAsync(user, "User");
+
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var confirmLink = Url.Action("ConfirmEmail", "Account",
+                    new { userId = user.Id, token }, Request.Scheme)!;
+
+                await _emailService.SendEmailConfirmationAsync(user.Email, user.FullName, confirmLink);
+
+                _logger.LogInformation("New user registered: {Email}", user.Email);
+
+                return RedirectToAction("RegisterSuccess", new { email = user.Email });
+            }
+            catch (RetryLimitExceededException ex)
+            {
+                _logger.LogError(ex, "Database unavailable during register for {Email}", model.Email);
+                ModelState.AddModelError(string.Empty, "Service is temporarily unavailable. Please try again shortly.");
                 return View(model);
             }
-
-            var user = new ApplicationUser
+            catch (DbUpdateException ex)
             {
-                FullName = model.FullName,
-                UserName = model.Email,
-                Email = model.Email,
-                EmailConfirmed = false
-            };
-
-            var result = await _userManager.CreateAsync(user, model.Password);
-            if (!result.Succeeded)
-            {
-                foreach (var err in result.Errors)
-                    ModelState.AddModelError(string.Empty, err.Description);
+                _logger.LogError(ex, "Database update failed during register for {Email}", model.Email);
+                ModelState.AddModelError(string.Empty, "Could not complete registration right now. Please try again.");
                 return View(model);
             }
-
-            await _userManager.AddToRoleAsync(user, "User");
-
-            // Send confirmation email
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var confirmLink = Url.Action("ConfirmEmail", "Account",
-                new { userId = user.Id, token }, Request.Scheme)!;
-
-            await _emailService.SendEmailConfirmationAsync(user.Email, user.FullName, confirmLink);
-
-            _logger.LogInformation("New user registered: {Email}", user.Email);
-
-            return RedirectToAction("RegisterSuccess", new { email = user.Email });
+            catch (NpgsqlException ex)
+            {
+                _logger.LogError(ex, "PostgreSQL error during register for {Email}", model.Email);
+                ModelState.AddModelError(string.Empty, "Database connection problem. Please try again later.");
+                return View(model);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Configuration/operation error during register for {Email}", model.Email);
+                ModelState.AddModelError(string.Empty, "Registration completed partially, but a required service is unavailable. Please contact support.");
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during register for {Email}", model.Email);
+                ModelState.AddModelError(string.Empty, "An unexpected error occurred. Please try again.");
+                return View(model);
+            }
         }
 
         // GET: /Account/RegisterSuccess
@@ -90,12 +143,36 @@ namespace Linear_v1.Controllers
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
                 return BadRequest("Invalid confirmation link.");
 
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) return NotFound("User not found.");
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null) return NotFound("User not found.");
 
-            var result = await _userManager.ConfirmEmailAsync(user, token);
-            ViewBag.Success = result.Succeeded;
-            return View();
+                var result = await _userManager.ConfirmEmailAsync(user, token);
+                ViewBag.Success = result.Succeeded;
+                return View();
+            }
+            catch (RetryLimitExceededException ex)
+            {
+                _logger.LogError(ex, "Database unavailable during email confirmation for userId {UserId}", userId);
+                ViewBag.Success = false;
+                ViewBag.Error = "Service is temporarily unavailable. Please try again shortly.";
+                return View();
+            }
+            catch (NpgsqlException ex)
+            {
+                _logger.LogError(ex, "PostgreSQL error during email confirmation for userId {UserId}", userId);
+                ViewBag.Success = false;
+                ViewBag.Error = "Database connection problem. Please try again later.";
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during email confirmation for userId {UserId}", userId);
+                ViewBag.Success = false;
+                ViewBag.Error = "An unexpected error occurred. Please try again.";
+                return View();
+            }
         }
 
         // GET: /Account/Login
@@ -114,46 +191,73 @@ namespace Linear_v1.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
-            var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null)
+            try
             {
+                var user = await _userManager.FindByEmailAsync(model.Email);
+                if (user == null)
+                {
+                    ModelState.AddModelError(string.Empty, "Invalid email or password.");
+                    return View(model);
+                }
+
+                if (!user.EmailConfirmed)
+                {
+                    ModelState.AddModelError(string.Empty, "Please verify your email first.");
+                    return View(model);
+                }
+
+                if (!user.IsActive)
+                {
+                    ModelState.AddModelError(string.Empty, "Your account has been deactivated.");
+                    return View(model);
+                }
+
+                var result = await _signInManager.PasswordSignInAsync(
+                    user, model.Password, model.RememberMe, lockoutOnFailure: true);
+
+                if (result.Succeeded)
+                {
+                    _logger.LogInformation("User logged in: {Email}", model.Email);
+
+                    if (await _userManager.IsInRoleAsync(user, "Admin"))
+                        return RedirectToAction("Index", "Admin");
+
+                    return LocalRedirect(returnUrl ?? "/User/Index");
+                }
+
+                if (result.IsLockedOut)
+                {
+                    ModelState.AddModelError(string.Empty, "Your account is temporarily locked. Please try again later.");
+                    return View(model);
+                }
+
                 ModelState.AddModelError(string.Empty, "Invalid email or password.");
                 return View(model);
             }
-
-            if (!user.EmailConfirmed)
+            catch (RetryLimitExceededException ex)
             {
-                ModelState.AddModelError(string.Empty, "Please verify your email first.");
+                _logger.LogError(ex, "Database unavailable during login for {Email}", model.Email);
+                ModelState.AddModelError(string.Empty, "Service is temporarily unavailable. Please try again shortly.");
                 return View(model);
             }
-
-            if (!user.IsActive)
+            catch (DbUpdateException ex)
             {
-                ModelState.AddModelError(string.Empty, "Your account has been deactivated.");
+                _logger.LogError(ex, "Database update failure during login for {Email}", model.Email);
+                ModelState.AddModelError(string.Empty, "Could not process login right now. Please try again.");
                 return View(model);
             }
-
-            var result = await _signInManager.PasswordSignInAsync(
-                user, model.Password, model.RememberMe, lockoutOnFailure: true);
-
-            if (result.Succeeded)
+            catch (NpgsqlException ex)
             {
-                _logger.LogInformation("User logged in: {Email}", model.Email);
-
-                if (await _userManager.IsInRoleAsync(user, "Admin"))
-                    return RedirectToAction("Index", "Admin");
-
-                return LocalRedirect(returnUrl ?? "/User/Index");
-            }
-
-            if (result.IsLockedOut)
-            {
-                ModelState.AddModelError(string.Empty, "Your account is temporarily locked. Please try again later.");
+                _logger.LogError(ex, "PostgreSQL error during login for {Email}", model.Email);
+                ModelState.AddModelError(string.Empty, "Database connection problem. Please try again later.");
                 return View(model);
             }
-
-            ModelState.AddModelError(string.Empty, "Invalid email or password.");
-            return View(model);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during login for {Email}", model.Email);
+                ModelState.AddModelError(string.Empty, "An unexpected error occurred. Please try again.");
+                return View(model);
+            }
         }
 
         // POST: /Account/Logout
@@ -162,8 +266,17 @@ namespace Linear_v1.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await _signInManager.SignOutAsync();
-            return RedirectToAction("Login");
+            try
+            {
+                await _signInManager.SignOutAsync();
+                return RedirectToAction("Login");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during logout.");
+                TempData["Info"] = "Could not sign out right now. Please try again.";
+                return RedirectToAction("Login");
+            }
         }
 
         // GET: /Account/AccessDenied

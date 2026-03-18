@@ -20,12 +20,12 @@
 
         <div class="form-group">
             <label asp-for="Email">Email</label>
-            <input asp-for="Email" class="form-input" placeholder="email@example.com" />
+            <input asp-for="Email" class="form-input" placeholder="email@example.com" autocomplete="email" />
             <span asp-validation-for="Email" class="field-error"></span>
         </div>
         <div class="form-group">
             <label asp-for="Password">Password</label>
-            <input asp-for="Password" class="form-input" placeholder="Password" />
+            <input asp-for="Password" class="form-input" placeholder="Password" autocomplete="current-password" />
             <span asp-validation-for="Password" class="field-error"></span>
         </div>
         <div class="form-group-inline">

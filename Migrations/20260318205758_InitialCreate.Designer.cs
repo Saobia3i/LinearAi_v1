@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Linear_v1.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260301124549_AddMissingOrderColumns")]
-    partial class AddMissingOrderColumns
+    [Migration("20260318205758_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

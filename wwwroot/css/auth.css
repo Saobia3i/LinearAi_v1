@@ -6,21 +6,6 @@
     padding: 0;
 }
 
-:root {
-    --bg-primary: #0a0808;
-    --bg-secondary: #111010;
-    --bg-tertiary: #1a1515;
-    --accent-red: #c0392b;
-    --accent-red-hover: #a93226;
-    --accent-red-glow: #e74c3c;
-    --beige: #d4b896;
-    --beige-light: #e8d5be;
-    --border: #2a1f1f;
-    --border-accent: #8b3a3a;
-    --text-primary: #f0e6d3;
-    --text-muted: #8a7a6a;
-}
-
 .auth-body {
     background: var(--bg-primary);
     min-height: 100vh;
@@ -28,7 +13,7 @@
     align-items: center;
     justify-content: center;
     font-family: 'Inter', sans-serif;
-    background-image: radial-gradient(ellipse at 20% 50%, #2a0a0a22 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, #1a0a0a33 0%, transparent 50%);
+    background-image: radial-gradient(ellipse at 20% 50%, color-mix(in srgb, var(--accent-red) 20%, transparent) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, color-mix(in srgb, var(--accent-red) 18%, transparent) 0%, transparent 50%);
 }
 
 .auth-container {
@@ -43,7 +28,7 @@
     border-radius: 16px;
     padding: 40px 36px;
     color: var(--text-primary);
-    box-shadow: 0 0 40px #c0392b11, 0 20px 60px #00000066;
+    box-shadow: var(--card-shadow);
 }
 
 .brand {
@@ -60,6 +45,7 @@
 
 .accent {
     color: var(--accent-red-glow);
+    text-shadow: 0 0 18px color-mix(in srgb, var(--accent-red-glow) 45%, transparent);
 }
 
 .auth-card h3 {
@@ -99,7 +85,7 @@
     .form-input:focus {
         outline: none;
         border-color: var(--border-accent);
-        box-shadow: 0 0 0 3px #c0392b18;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-red) 24%, transparent);
     }
 
     .form-input::placeholder {
@@ -140,7 +126,7 @@
 }
 
     .auth-link a {
-        color: var(--beige);
+        color: var(--accent-red);
         text-decoration: none;
         font-weight: 500;
         transition: color 0.2s;
@@ -161,9 +147,9 @@
 }
 
 .alert-info {
-    background: #1a150a;
-    border: 1px solid var(--border-accent);
-    color: var(--beige);
+    background: color-mix(in srgb, var(--highlight) 16%, var(--bg-secondary));
+    border: 1px solid color-mix(in srgb, var(--highlight) 40%, var(--border));
+    color: color-mix(in srgb, var(--highlight) 75%, #000);
     padding: 11px 14px;
     border-radius: 8px;
     font-size: 13px;
@@ -224,3 +210,14 @@
         height: 1px;
         background: var(--border);
     }
+
+@media (max-width: 576px) {
+    .auth-container {
+        max-width: 100%;
+        padding: 14px;
+    }
+
+    .auth-card {
+        padding: 24px 18px;
+    }
+}
