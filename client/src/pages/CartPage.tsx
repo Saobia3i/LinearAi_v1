@@ -8,7 +8,7 @@ export function CartPage() {
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [voucher, setVoucher] = useState("");
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   const load = async (voucherCode?: string) => {
     const response = await getCart(voucherCode);
@@ -24,9 +24,10 @@ export function CartPage() {
     try {
       const response = await applyVoucher(voucher);
       setCart(response.data);
-      setMessage(response.data.summary.voucherMessage ?? "Voucher checked.");
+      const msg = response.data.summary.voucherMessage ?? "Voucher checked.";
+      setMessage({ text: msg, type: response.data.summary.voucherValid ? "success" : "error" });
     } catch (error) {
-      setMessage(getErrorMessage(error, "Voucher apply failed"));
+      setMessage({ text: getErrorMessage(error, "Voucher apply failed"), type: "error" });
     }
   };
 
@@ -38,11 +39,11 @@ export function CartPage() {
   const onCheckout = async () => {
     try {
       const response = await checkout(voucher || undefined);
-      setMessage(response.message ?? "Order placed");
+      setMessage({ text: response.message ?? "Order placed", type: "success" });
       await load();
       setVoucher("");
     } catch (error) {
-      setMessage(getErrorMessage(error, "Checkout failed"));
+      setMessage({ text: getErrorMessage(error, "Checkout failed"), type: "error" });
     }
   };
 
@@ -52,7 +53,11 @@ export function CartPage() {
   return (
     <section className="space-y-4">
       <h2 className="section-title">Cart</h2>
-      {message && <p className="section-subtitle">{message}</p>}
+      {message && (
+        <p className={`text-sm ${message.type === "success" ? "text-emerald-400" : "text-red-400"}`}>
+          {message.text}
+        </p>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-3 lg:col-span-2">

@@ -116,6 +116,35 @@ namespace Linear_v1.Controllers.Api
             return Ok(new { success = true, message = "Product updated successfully." });
         }
 
+        [HttpDelete("products/{id:int}")]
+        public async Task<IActionResult> DeleteProduct(int id)
+        {
+            var product = await _db.Products
+                .Include(p => p.Subscriptions)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (product == null)
+                return NotFound(new { success = false, message = "Product not found." });
+
+            var hasOrders = await _db.Orders.AnyAsync(o => o.ProductId == id);
+            if (hasOrders)
+            {
+                // Soft delete — deactivate instead of hard delete
+                product.IsActive = false;
+                foreach (var sub in product.Subscriptions)
+                    sub.IsActive = false;
+                await _db.SaveChangesAsync();
+                return Ok(new { success = true, message = "Product deactivated (has existing orders)." });
+            }
+
+            // No orders — safe to hard delete (subscriptions cascade)
+            _db.ProductSubscriptions.RemoveRange(product.Subscriptions);
+            _db.Products.Remove(product);
+            await _db.SaveChangesAsync();
+
+            return Ok(new { success = true, message = "Product deleted." });
+        }
+
         [HttpPost("products/{id:int}/subscriptions")]
         public async Task<IActionResult> SaveSubscription(int id, [FromBody] SubscriptionRequest request)
         {
@@ -179,7 +208,7 @@ namespace Linear_v1.Controllers.Api
                     v.DiscountPercent,
                     v.MaxDiscountAmount,
                     v.MinimumOrderAmount,
-                    v.MaxUses,
+                    maxUses = v.UsageLimit,
                     v.UsedCount,
                     v.IsActive,
                     v.ExpiryDate,
@@ -207,14 +236,16 @@ namespace Linear_v1.Controllers.Api
             var voucher = new Voucher
             {
                 Code = code,
-                Description = request.Description.Trim(),
+                Description = request.Description?.Trim() ?? string.Empty,
                 DiscountPercent = request.DiscountPercent,
                 MaxDiscountAmount = request.MaxDiscountAmount,
                 MinimumOrderAmount = request.MinimumOrderAmount,
-                MaxUses = request.MaxUses,
+                UsageLimit = request.MaxUses == 0 ? null : (int?)request.MaxUses,
                 IsActive = true,
                 UsedCount = 0,
-                ExpiryDate = request.ExpiryDate,
+                ExpiryDate = request.ExpiryDate.HasValue
+                    ? DateTime.SpecifyKind(request.ExpiryDate.Value, DateTimeKind.Utc)
+                    : null,
                 CreatedAt = DateTime.UtcNow
             };
 

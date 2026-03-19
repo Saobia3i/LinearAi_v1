@@ -323,6 +323,8 @@ namespace Linear_v1.Controllers.Api
                     o.ProductId,
                     productTitle = o.Product.Title,
                     o.DurationMonths,
+                    originalPrice = o.OriginalPrice,
+                    discountAmount = o.DiscountAmount,
                     o.FinalAmount,
                     paymentStatus = o.PaymentStatus.ToString(),
                     o.OrderDate,
@@ -352,6 +354,7 @@ namespace Linear_v1.Controllers.Api
                     user.FullName,
                     user.Email,
                     user.PhoneNumber,
+                    user.EmailConfirmed,
                     user.CreatedAt,
                     user.IsActive
                 }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Linear_v1.Models
 {
@@ -10,7 +11,6 @@ namespace Linear_v1.Models
         [StringLength(50)]
         public string Code { get; set; } = string.Empty;
 
-        [Required]
         [StringLength(200)]
         public string Description { get; set; } = string.Empty;
 
@@ -28,15 +28,8 @@ namespace Linear_v1.Models
 
         public DateTime? ExpiryDate { get; set; }
 
-        [Required]
-        public int MaxUses { get; set; }
-
-        // Alternative property name for compatibility with nullable usage limit
-        public int? UsageLimit 
-        { 
-            get => MaxUses == 0 ? null : MaxUses; 
-            set => MaxUses = value ?? 0; 
-        }
+        // DB column is UsageLimit (nullable) — null = unlimited
+        public int? UsageLimit { get; set; }
 
         public int UsedCount { get; set; } = 0;
 
@@ -44,7 +37,9 @@ namespace Linear_v1.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Calculated property
-        public bool IsValid => IsActive && (!ExpiryDate.HasValue || DateTime.UtcNow <= ExpiryDate.Value) && UsedCount < MaxUses;
+        [NotMapped]
+        public bool IsValid => IsActive
+            && (!ExpiryDate.HasValue || DateTime.UtcNow <= ExpiryDate.Value)
+            && (!UsageLimit.HasValue || UsedCount < UsageLimit.Value);
     }
 }

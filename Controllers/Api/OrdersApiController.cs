@@ -48,16 +48,19 @@ namespace Linear_v1.Controllers.Api
             if (order == null)
                 return NotFound(new { success = false, message = "Order not found." });
 
-            order.PaymentStatus = request.Status;
+            if (!Enum.TryParse<PaymentStatus>(request.Status, ignoreCase: true, out var newStatus))
+                return BadRequest(new { success = false, message = $"Invalid status '{request.Status}'." });
+
+            order.PaymentStatus = newStatus;
             await _db.SaveChangesAsync();
 
             return Ok(new
             {
                 success = true,
-                message = $"Order #{id} status updated to {request.Status}."
+                message = $"Order #{id} status updated to {newStatus}."
             });
         }
 
-        public record UpdateStatusRequest(PaymentStatus Status);
+        public record UpdateStatusRequest(string Status);
     }
 }

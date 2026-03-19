@@ -133,6 +133,11 @@ export async function deleteAdminSubscription(subscriptionId: number) {
   return response.data;
 }
 
+export async function deleteAdminProduct(productId: number) {
+  const response = await api.delete<ApiResponse<unknown>>(`api/admin/products/${productId}`);
+  return response.data;
+}
+
 export async function getAdminVouchers() {
   const response = await api.get<ApiResponse<VoucherSummary[]>>("api/admin/vouchers");
   return response.data;

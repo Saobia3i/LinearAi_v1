@@ -47,6 +47,8 @@ export type OrderSummary = {
   productId: number;
   productTitle: string;
   durationMonths?: number;
+  originalPrice?: number;
+  discountAmount?: number;
   finalAmount: number;
   paymentStatus: string;
   orderDate: string;
@@ -92,6 +94,7 @@ export type AccountInfo = {
   fullName: string;
   email: string;
   phoneNumber?: string;
+  emailConfirmed?: boolean;
   createdAt: string;
   isActive: boolean;
 };

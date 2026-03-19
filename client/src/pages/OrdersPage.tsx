@@ -5,46 +5,70 @@ import type { OrderSummary } from "../types";
 
 export function OrdersPage() {
   const [orders, setOrders] = useState<OrderSummary[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getOrders()
       .then((res) => setOrders(res.data ?? []))
-      .catch(() => setOrders([]));
+      .catch(() => setOrders([]))
+      .finally(() => setLoading(false));
   }, []);
+
+  const statusColor = (s: string) =>
+    s === "Paid" ? "success" : s === "Pending" ? "warning" : "danger";
+
+  if (loading) return <p className="section-subtitle">Loading orders...</p>;
 
   return (
     <section className="space-y-4">
       <h2 className="section-title">My Orders</h2>
 
-      <Table aria-label="Orders table" className="rounded-xl border border-slate-800">
-        <TableHeader>
-          <TableColumn>ID</TableColumn>
-          <TableColumn>PRODUCT</TableColumn>
-          <TableColumn>DURATION</TableColumn>
-          <TableColumn>AMOUNT</TableColumn>
-          <TableColumn>STATUS</TableColumn>
-          <TableColumn>DATE</TableColumn>
-        </TableHeader>
-        <TableBody emptyContent="No orders yet.">
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell>#{order.id}</TableCell>
-              <TableCell>{order.productTitle}</TableCell>
-              <TableCell>{order.durationMonths ?? 0} months</TableCell>
-              <TableCell>৳{order.finalAmount}</TableCell>
-              <TableCell>
-                <Chip
-                  size="sm"
-                  variant="flat"
-                  color={order.paymentStatus === "Paid" ? "success" : order.paymentStatus === "Pending" ? "warning" : "danger"}>
-                  {order.paymentStatus}
-                </Chip>
-              </TableCell>
-              <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <div className="overflow-x-auto">
+        <Table aria-label="Orders table" className="rounded-xl border border-slate-800">
+          <TableHeader>
+            <TableColumn>#</TableColumn>
+            <TableColumn>Product</TableColumn>
+            <TableColumn>Plan</TableColumn>
+            <TableColumn>Original</TableColumn>
+            <TableColumn>Discount</TableColumn>
+            <TableColumn>Final</TableColumn>
+            <TableColumn>Voucher</TableColumn>
+            <TableColumn>Status</TableColumn>
+            <TableColumn>Expires</TableColumn>
+          </TableHeader>
+          <TableBody emptyContent="No orders yet.">
+            {orders.map((order) => (
+              <TableRow key={order.id}>
+                <TableCell className="text-slate-400">#{order.id}</TableCell>
+                <TableCell className="font-medium text-white">{order.productTitle}</TableCell>
+                <TableCell className="text-slate-300">{order.durationMonths ?? 0} months</TableCell>
+                <TableCell className="text-slate-300">৳{order.originalPrice ?? order.finalAmount}</TableCell>
+                <TableCell className="text-emerald-400">
+                  {order.discountAmount && order.discountAmount > 0 ? `-৳${order.discountAmount}` : "—"}
+                </TableCell>
+                <TableCell className="font-semibold text-white">৳{order.finalAmount}</TableCell>
+                <TableCell>
+                  {order.voucherCode ? (
+                    <span className="font-mono text-xs text-yellow-400">{order.voucherCode}</span>
+                  ) : (
+                    <span className="text-slate-500">—</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Chip size="sm" variant="flat" color={statusColor(order.paymentStatus)}>
+                    {order.paymentStatus}
+                  </Chip>
+                </TableCell>
+                <TableCell className="text-slate-400 text-xs">
+                  {order.subscriptionEndDate
+                    ? new Date(order.subscriptionEndDate).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" })
+                    : "—"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </section>
   );
 }
