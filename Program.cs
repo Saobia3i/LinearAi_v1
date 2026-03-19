@@ -3,6 +3,7 @@ using Linear_v1.Models;
 using Linear_v1.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using System.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -39,14 +40,55 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 // Cookie
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.LoginPath = "/Account/Login";
-    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.LoginPath = "/login";
+    options.AccessDeniedPath = "/home";
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    options.Events.OnRedirectToLogin = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        }
+
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        }
+
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
 });
 
 // App services
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddControllersWithViews();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ReactClient", policy =>
+    {
+        var configuredOrigins = builder.Configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>()
+            ?? Array.Empty<string>();
+
+        var allowedOrigins = configuredOrigins.Length > 0
+            ? configuredOrigins
+            : new[] { "http://localhost:5173", "https://localhost:5173" };
+
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
@@ -60,9 +102,27 @@ var app = builder.Build();
 // Critical startup step: migrate + seed, fail fast if broken
 await InitializeDatabaseAsync(app.Services);
 
+var reactDistPath = Path.Combine(app.Environment.ContentRootPath, "client", "dist");
+var reactDistExists = Directory.Exists(reactDistPath);
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+if (reactDistExists)
+{
+    var reactFileProvider = new PhysicalFileProvider(reactDistPath);
+    app.UseDefaultFiles(new DefaultFilesOptions
+    {
+        FileProvider = reactFileProvider
+    });
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = reactFileProvider
+    });
+}
+
 app.UseRouting();
+app.UseCors("ReactClient");
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -70,6 +130,26 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
+
+app.MapFallback(async context =>
+{
+    if (context.Request.Path.StartsWithSegments("/api"))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    if (!reactDistExists)
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsync("React frontend not built. Run: cd client && npm run build");
+        return;
+    }
+
+    var indexPath = Path.Combine(reactDistPath, "index.html");
+    context.Response.ContentType = "text/html; charset=utf-8";
+    await context.Response.SendFileAsync(indexPath);
+});
 
 app.Run();
 
