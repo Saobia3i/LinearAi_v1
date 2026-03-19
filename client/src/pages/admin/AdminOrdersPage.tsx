@@ -30,20 +30,19 @@ export function AdminOrdersPage() {
     s === "Paid" ? "success" : s === "Pending" ? "warning" : s === "Cancelled" ? "danger" : "default";
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2">
-        <h2 className="section-title">Order Management</h2>
-        <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-400">{orders.length}</span>
+    <section className="premium-section">
+      <div className="premium-section-head">
+        <div>
+          <p className="premium-kicker">Operations Queue</p>
+          <h2 className="section-title">Order Management</h2>
+        </div>
+        <span className="premium-chip-blue">{orders.length} orders</span>
       </div>
 
-      {message && (
-        <p className={`text-sm ${message.type === "success" ? "text-emerald-400" : "text-red-400"}`}>
-          {message.text}
-        </p>
-      )}
+      {message && <p className={`text-sm ${message.type === "success" ? "premium-success" : "premium-danger"}`}>{message.text}</p>}
 
       <div className="overflow-x-auto">
-        <Table aria-label="Admin orders table" className="rounded-xl border border-slate-800">
+        <Table aria-label="Admin orders table" className="premium-table">
           <TableHeader>
             <TableColumn>#</TableColumn>
             <TableColumn>Client Email</TableColumn>
@@ -56,13 +55,15 @@ export function AdminOrdersPage() {
           <TableBody emptyContent="No orders found.">
             {orders.map((order) => (
               <TableRow key={order.id}>
-                <TableCell className="text-slate-400">#{order.id}</TableCell>
-                <TableCell className="text-slate-300">{order.clientEmail}</TableCell>
-                <TableCell className="font-medium text-white">{order.product}</TableCell>
-                <TableCell className="text-slate-300">৳{order.price}</TableCell>
-                <TableCell className="text-slate-400 text-xs">
+                <TableCell className="text-[var(--theme-muted)]">#{order.id}</TableCell>
+                <TableCell className="text-[var(--theme-text)]">{order.clientEmail}</TableCell>
+                <TableCell className="font-semibold text-[var(--theme-text)]">{order.product}</TableCell>
+                <TableCell className="text-[var(--theme-text)]">৳{order.price}</TableCell>
+                <TableCell className="text-xs text-[var(--theme-muted)]">
                   {new Date(order.orderDate).toLocaleDateString("en-GB", {
-                    day: "2-digit", month: "2-digit", year: "numeric"
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
                   })}
                 </TableCell>
                 <TableCell>
@@ -71,14 +72,14 @@ export function AdminOrdersPage() {
                   </Chip>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {order.paymentStatus !== "Paid" && (
-                      <Button size="sm" variant="flat" color="success" onPress={() => onMark(order.id, "Paid")}>
+                      <Button size="sm" radius="full" variant="flat" color="success" onPress={() => onMark(order.id, "Paid")}>
                         Mark Paid
                       </Button>
                     )}
                     {order.paymentStatus !== "Pending" && (
-                      <Button size="sm" variant="flat" color="warning" onPress={() => onMark(order.id, "Pending")}>
+                      <Button size="sm" radius="full" variant="flat" color="warning" onPress={() => onMark(order.id, "Pending")}>
                         Mark Pending
                       </Button>
                     )}

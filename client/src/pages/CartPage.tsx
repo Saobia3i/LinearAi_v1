@@ -21,6 +21,7 @@ export function CartPage() {
 
   const onVoucher = async (e: FormEvent) => {
     e.preventDefault();
+
     try {
       const response = await applyVoucher(voucher);
       setCart(response.data);
@@ -51,27 +52,34 @@ export function CartPage() {
   if (!cart) return <p className="section-subtitle">No cart data.</p>;
 
   return (
-    <section className="space-y-4">
-      <h2 className="section-title">Cart</h2>
-      {message && (
-        <p className={`text-sm ${message.type === "success" ? "text-emerald-400" : "text-red-400"}`}>
-          {message.text}
-        </p>
-      )}
+    <section className="premium-section">
+      <div className="premium-section-head">
+        <div>
+          <p className="premium-kicker">Checkout Flow</p>
+          <h2 className="section-title">Cart</h2>
+        </div>
+      </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="space-y-3 lg:col-span-2">
+      {message && <p className={`text-sm ${message.type === "success" ? "premium-success" : "premium-danger"}`}>{message.text}</p>}
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_360px]">
+        <div className="space-y-4">
           {cart.items.length === 0 && <p className="section-subtitle">Your cart is empty.</p>}
+
           {cart.items.map((item) => (
-            <Card key={`${item.productId}-${item.durationMonths}`} className="border border-slate-800 bg-slate-900/60">
-              <CardBody className="flex flex-row items-center justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-white">{item.productTitle}</p>
-                  <p className="text-sm text-slate-400">{item.durationMonths} months</p>
+            <Card key={`${item.productId}-${item.durationMonths}`} className="premium-card">
+              <CardBody className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <p className="text-lg font-bold text-[var(--theme-text)]">{item.productTitle}</p>
+                  <p className="text-sm text-[var(--theme-muted)]">{item.durationMonths} months subscription</p>
                 </div>
+
                 <div className="flex items-center gap-3">
-                  <p className="font-medium text-blue-200">৳{item.finalPrice}</p>
-                  <Button isIconOnly color="danger" variant="flat" onPress={() => onRemove(item.productId, item.durationMonths)}>
+                  <div className="text-right">
+                    <p className="premium-stat-label">Final Price</p>
+                    <p className="text-xl font-black text-[var(--theme-blue)]">৳{item.finalPrice}</p>
+                  </div>
+                  <Button isIconOnly color="danger" variant="flat" radius="full" onPress={() => onRemove(item.productId, item.durationMonths)}>
                     <Trash2 size={14} />
                   </Button>
                 </div>
@@ -80,28 +88,51 @@ export function CartPage() {
           ))}
         </div>
 
-        <Card className="h-fit border border-slate-800 bg-slate-900/80">
-          <CardBody className="space-y-3">
-            <form className="space-y-2" onSubmit={onVoucher}>
+        <Card className="premium-card h-fit">
+          <CardBody className="space-y-5 p-5">
+            <div>
+              <p className="premium-kicker">Order Summary</p>
+              <h3 className="mt-2 text-xl font-bold text-[var(--theme-text)]">Complete your purchase</h3>
+            </div>
+
+            <form className="space-y-3" onSubmit={onVoucher}>
               <Input
                 value={voucher}
                 onValueChange={setVoucher}
                 placeholder="Voucher code"
-                startContent={<Tag size={14} className="text-slate-400" />}
+                radius="lg"
+                classNames={{
+                  inputWrapper: "premium-input",
+                  input: "text-[var(--theme-text)]",
+                  label: "text-[var(--theme-muted)]"
+                }}
+                startContent={<Tag size={14} className="text-[var(--theme-muted)]" />}
               />
-              <Button type="submit" color="primary" variant="flat" className="w-full">
+              <Button type="submit" radius="full" color="warning" variant="flat" className="w-full">
                 Apply Voucher
               </Button>
             </form>
 
-            <div className="space-y-1 text-sm">
-              <p className="flex justify-between text-slate-300"><span>Subtotal</span><span>৳{cart.summary.subTotal}</span></p>
-              <p className="flex justify-between text-slate-300"><span>Bundle discount</span><span>৳{cart.summary.bundleDiscount}</span></p>
-              <p className="flex justify-between text-slate-300"><span>Voucher discount</span><span>৳{cart.summary.voucherDiscount}</span></p>
-              <p className="flex justify-between pt-2 text-base font-semibold text-white"><span>Total</span><span>৳{cart.summary.total}</span></p>
+            <div className="premium-summary-stack">
+              <div className="premium-summary-row">
+                <span>Subtotal</span>
+                <span>৳{cart.summary.subTotal}</span>
+              </div>
+              <div className="premium-summary-row">
+                <span>Bundle discount</span>
+                <span>৳{cart.summary.bundleDiscount}</span>
+              </div>
+              <div className="premium-summary-row">
+                <span>Voucher discount</span>
+                <span>৳{cart.summary.voucherDiscount}</span>
+              </div>
+              <div className="premium-summary-total">
+                <span>Total</span>
+                <span>৳{cart.summary.total}</span>
+              </div>
             </div>
 
-            <Button color="primary" className="w-full" onPress={onCheckout} isDisabled={cart.items.length === 0}>
+            <Button color="danger" radius="full" size="lg" className="w-full" onPress={onCheckout} isDisabled={cart.items.length === 0}>
               Checkout
             </Button>
           </CardBody>

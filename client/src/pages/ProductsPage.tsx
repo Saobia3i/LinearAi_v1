@@ -1,4 +1,4 @@
-import { Button, Card, CardBody, Chip } from "@heroui/react";
+import { Button, Card, CardBody, Chip, Pagination } from "@heroui/react";
 import { Package, ShoppingCart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { addToCart, getErrorMessage, getProducts } from "../api";
@@ -10,12 +10,14 @@ export function ProductsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedPlans, setSelectedPlans] = useState<Record<number, number>>({});
   const [msg, setMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 6;
 
   useEffect(() => {
     getProducts()
       .then((res) => {
         setProducts(res.data);
-        // default select first subscription plan for each product
+
         const defaults: Record<number, number> = {};
         res.data.forEach((p) => {
           if (p.subscriptions.length > 0) defaults[p.id] = p.subscriptions[0].durationMonths;
@@ -29,6 +31,7 @@ export function ProductsPage() {
   const onAdd = async (productId: number) => {
     const durationMonths = selectedPlans[productId];
     if (!durationMonths) return;
+
     setMsg(null);
     try {
       const res = await addToCart(productId, durationMonths);
@@ -41,95 +44,110 @@ export function ProductsPage() {
   if (loading) return <p className="section-subtitle">Loading products...</p>;
   if (loadError) return <p className="section-subtitle">{loadError}</p>;
 
+  const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
+  const visibleProducts = products.slice((page - 1) * pageSize, page * pageSize);
+
   return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Package size={20} className="text-blue-300" />
-        <h2 className="section-title">Products</h2>
+    <section className="premium-section">
+      <div className="premium-section-head">
+        <div>
+          <p className="premium-kicker">Storefront</p>
+          <h2 className="section-title">Products</h2>
+        </div>
+        <div className="premium-icon-badge premium-icon-blue">
+          <Package size={20} />
+        </div>
       </div>
 
-      {msg && (
-        <p className={`text-sm ${msg.type === "success" ? "text-emerald-400" : "text-red-400"}`}>
-          {msg.text}
-        </p>
-      )}
+      {msg && <p className={`text-sm ${msg.type === "success" ? "premium-success" : "premium-danger"}`}>{msg.text}</p>}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {products.map((product) => {
+      <div className="premium-product-grid">
+        {visibleProducts.map((product) => {
           const selectedDuration = selectedPlans[product.id];
           const selectedSub = product.subscriptions.find((s) => s.durationMonths === selectedDuration);
 
           return (
-            <Card key={product.id} className="border border-slate-800 bg-slate-900/70">
-              <CardBody className="space-y-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{product.title}</h3>
-                    <p className="text-sm text-slate-400">{product.shortDescription}</p>
+            <Card key={product.id} className="premium-card product-card">
+              <CardBody className="product-card-body">
+                <div className="product-card-top">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="premium-card-title">{product.title}</h3>
+                      <Chip size="sm" variant="flat" color="danger" className="shrink-0">
+                        Base
+                      </Chip>
+                    </div>
+                    <p className="premium-card-desc">{product.shortDescription}</p>
                   </div>
-                  <Chip variant="flat" color="primary" size="sm" className="shrink-0">
-                    ৳{product.price}
-                  </Chip>
+
+                  <div className="product-price-line">
+                    <span className="premium-label">Starting from</span>
+                    <span className="premium-price">৳{product.price}</span>
+                  </div>
                 </div>
 
-                {/* Subscription plan selector */}
                 {product.subscriptions.length > 0 ? (
                   <>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Choose Plan</p>
-                      <div className="flex flex-wrap gap-2">
-                        {product.subscriptions.map((s) => (
-                          <button
-                            key={s.id}
-                            onClick={() => setSelectedPlans((prev) => ({ ...prev, [product.id]: s.durationMonths }))}
-                            className={`rounded-lg border px-3 py-2 text-sm transition-all ${
-                              selectedDuration === s.durationMonths
-                                ? "border-blue-500 bg-blue-500/20 text-white"
-                                : "border-slate-700 bg-slate-800/60 text-slate-300 hover:border-slate-500"
-                            }`}>
-                            <span className="font-medium">{s.durationMonths} months</span>
-                            <span className="ml-2 font-bold">৳{s.finalPrice}</span>
-                            {s.discountPercent > 0 && (
-                              <>
-                                <span className="ml-1 text-xs line-through text-slate-500">৳{s.price}</span>
-                                <span className="ml-1 text-xs text-emerald-400">-{s.discountPercent}%</span>
-                              </>
-                            )}
-                          </button>
-                        ))}
+                    <div className="space-y-3">
+                      <p className="premium-label">Choose Plan</p>
+                      <div className="product-plan-grid">
+                        {product.subscriptions.map((s) => {
+                          const active = selectedDuration === s.durationMonths;
+
+                          return (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => setSelectedPlans((prev) => ({ ...prev, [product.id]: s.durationMonths }))}
+                              className={active ? "product-plan-chip product-plan-chip-active" : "product-plan-chip"}>
+                              <span className="product-plan-duration">{s.durationMonths} months</span>
+                              <span className="product-plan-price">৳{s.finalPrice}</span>
+                              {s.discountPercent > 0 && <span className="premium-offer">-{s.discountPercent}%</span>}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
-                    {/* Selected plan summary */}
                     {selectedSub && (
-                      <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/40 px-4 py-2">
-                        <div className="text-sm text-slate-300">
-                          <span>{selectedSub.durationMonths}-month plan</span>
-                          {selectedSub.discountPercent > 0 && (
-                            <span className="ml-2 text-emerald-400">{selectedSub.discountPercent}% off</span>
-                          )}
+                      <div className="product-summary-row">
+                        <div>
+                          <p className="premium-label">Selected</p>
+                          <p className="product-summary-title">{selectedSub.durationMonths}-month access</p>
                         </div>
-                        <span className="text-lg font-bold text-white">৳{selectedSub.finalPrice}</span>
+                        <div className="text-right">
+                          <p className="premium-price-inline">৳{selectedSub.finalPrice}</p>
+                          {selectedSub.discountPercent > 0 && <p className="premium-offer">{selectedSub.discountPercent}% off</p>}
+                        </div>
                       </div>
                     )}
 
-                    <Button
-                      color="primary"
-                      className="w-full"
-                      startContent={<ShoppingCart size={14} />}
-                      onPress={() => onAdd(product.id)}
-                      isDisabled={!selectedDuration}>
-                      Add to Cart
-                    </Button>
+                    <div className="product-card-footer">
+                      <Button
+                        color="danger"
+                        radius="full"
+                        className="product-cart-btn"
+                        startContent={<ShoppingCart size={16} />}
+                        onPress={() => onAdd(product.id)}
+                        isDisabled={!selectedDuration}>
+                        Add to Cart
+                      </Button>
+                    </div>
                   </>
                 ) : (
-                  <p className="text-sm text-slate-500">No subscription plans available.</p>
+                  <p className="section-subtitle">No subscription plans available.</p>
                 )}
               </CardBody>
             </Card>
           );
         })}
       </div>
+
+      {products.length > pageSize && (
+        <div className="premium-pagination-wrap">
+          <Pagination page={page} total={totalPages} onChange={setPage} radius="full" color="danger" showControls />
+        </div>
+      )}
     </section>
   );
 }
