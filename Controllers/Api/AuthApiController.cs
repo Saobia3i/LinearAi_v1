@@ -1,6 +1,7 @@
 ﻿using Linear_v1.Models;
 using Linear_v1.Models.ViewModels;
 using Linear_v1.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -118,8 +119,35 @@ namespace Linear_v1.Controllers.Api
             return Unauthorized(new { success = false, message = "Invalid email or password." });
         }
 
+        // GET: api/auth/me
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> Me()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Unauthorized(new { success = false, message = "User not authenticated." });
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return Ok(new
+            {
+                success = true,
+                data = new
+                {
+                    id = user.Id,
+                    fullName = user.FullName,
+                    email = user.Email,
+                    role = roles.FirstOrDefault() ?? "User"
+                }
+            });
+        }
+
         // POST: api/auth/logout
         [HttpPost("logout")]
+        [Authorize]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();

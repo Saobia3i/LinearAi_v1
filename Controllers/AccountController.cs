@@ -35,22 +35,22 @@ namespace Linear_v1.Controllers
         {
             if (!User.Identity!.IsAuthenticated)
             {
-                return RedirectToAction(nameof(Login));
+                return Redirect("/login");
             }
 
             var user = await _userManager.GetUserAsync(User);
             if (user != null && await _userManager.IsInRoleAsync(user, "Admin"))
             {
-                return RedirectToAction("Index", "Admin");
+                return Redirect("/admin");
             }
 
-            return RedirectToAction("Index", "User");
+            return Redirect("/home");
         }
 
         // GET: /Account/Register
         [HttpGet]
         public IActionResult Register() =>
-            User.Identity!.IsAuthenticated ? RedirectToAction("Index", "User") : View();
+            User.Identity!.IsAuthenticated ? Redirect("/home") : Redirect("/signup");
 
         // POST: /Account/Register
         [HttpPost]
@@ -132,8 +132,11 @@ namespace Linear_v1.Controllers
         [HttpGet]
         public IActionResult RegisterSuccess(string email)
         {
-            ViewBag.Email = email;
-            return View();
+            var query = string.IsNullOrWhiteSpace(email)
+                ? string.Empty
+                : $"?email={Uri.EscapeDataString(email)}";
+
+            return Redirect($"/login{query}");
         }
 
         // GET: /Account/ConfirmEmail
@@ -141,37 +144,36 @@ namespace Linear_v1.Controllers
         public async Task<IActionResult> ConfirmEmail(string userId, string token)
         {
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
-                return BadRequest("Invalid confirmation link.");
+                return Redirect("/confirm-email?success=false&message=Invalid%20confirmation%20link.");
 
             try
             {
                 var user = await _userManager.FindByIdAsync(userId);
-                if (user == null) return NotFound("User not found.");
+                if (user == null)
+                    return Redirect("/confirm-email?success=false&message=User%20not%20found.");
 
                 var result = await _userManager.ConfirmEmailAsync(user, token);
-                ViewBag.Success = result.Succeeded;
-                return View();
+                if (result.Succeeded)
+                    return Redirect("/confirm-email?success=true");
+
+                var error = result.Errors.FirstOrDefault()?.Description
+                    ?? "The link has expired or is invalid.";
+                return Redirect($"/confirm-email?success=false&message={Uri.EscapeDataString(error)}");
             }
             catch (RetryLimitExceededException ex)
             {
                 _logger.LogError(ex, "Database unavailable during email confirmation for userId {UserId}", userId);
-                ViewBag.Success = false;
-                ViewBag.Error = "Service is temporarily unavailable. Please try again shortly.";
-                return View();
+                return Redirect("/confirm-email?success=false&message=Service%20is%20temporarily%20unavailable.%20Please%20try%20again%20shortly.");
             }
             catch (NpgsqlException ex)
             {
                 _logger.LogError(ex, "PostgreSQL error during email confirmation for userId {UserId}", userId);
-                ViewBag.Success = false;
-                ViewBag.Error = "Database connection problem. Please try again later.";
-                return View();
+                return Redirect("/confirm-email?success=false&message=Database%20connection%20problem.%20Please%20try%20again%20later.");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error during email confirmation for userId {UserId}", userId);
-                ViewBag.Success = false;
-                ViewBag.Error = "An unexpected error occurred. Please try again.";
-                return View();
+                return Redirect("/confirm-email?success=false&message=An%20unexpected%20error%20occurred.%20Please%20try%20again.");
             }
         }
 
@@ -179,9 +181,13 @@ namespace Linear_v1.Controllers
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
-            if (User.Identity!.IsAuthenticated) return RedirectToAction("Index", "User");
-            ViewBag.ReturnUrl = returnUrl;
-            return View();
+            if (User.Identity!.IsAuthenticated) return Redirect("/home");
+
+            var query = string.IsNullOrWhiteSpace(returnUrl)
+                ? string.Empty
+                : $"?returnUrl={Uri.EscapeDataString(returnUrl)}";
+
+            return Redirect($"/login{query}");
         }
 
         // POST: /Account/Login
@@ -281,6 +287,6 @@ namespace Linear_v1.Controllers
 
         // GET: /Account/AccessDenied
         [HttpGet]
-        public IActionResult AccessDenied() => View();
+        public IActionResult AccessDenied() => Redirect("/home");
     }
 }
