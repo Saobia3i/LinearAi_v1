@@ -11,6 +11,7 @@ import {
 import { MoonIcon, SunIcon } from "@heroicons/react/24/outline";
 import {
   LayoutDashboard,
+  LogIn,
   LogOut,
   Package,
   ReceiptText,
@@ -18,6 +19,7 @@ import {
   ShoppingCart,
   TicketPercent,
   UserCog,
+  UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -42,7 +44,7 @@ const adminLinks = [
 ];
 
 export function AppLayout() {
-  const { user, logoutAction } = useAuth();
+  const { user, loading: authLoading, logoutAction } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,7 +52,9 @@ export function AppLayout() {
 
   const isAdmin = user?.role === "Admin";
   const links = isAdmin ? adminLinks : userLinks;
-  const desktopLinks = links.filter((link) => link.to !== "/account");
+  const desktopLinks = user
+    ? links.filter((link) => link.to !== "/account")
+    : userLinks.filter((link) => link.to === "/home" || link.to === "/products");
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -145,35 +149,46 @@ export function AppLayout() {
 
         <NavbarContent justify="end" className="hidden basis-0 lg:flex">
           <NavbarItem>
-            <Dropdown placement="bottom-end">
-              <DropdownTrigger>
-                <motion.button 
-                  type="button" 
-                  className="premium-user-name"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+            {authLoading ? null : user ? (
+              <Dropdown placement="bottom-end">
+                <DropdownTrigger>
+                  <motion.button
+                    type="button"
+                    className="premium-user-name"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {user.fullName}
+                  </motion.button>
+                </DropdownTrigger>
+                <DropdownMenu
+                  aria-label="User actions"
+                  className="premium-user-menu"
+                  itemClasses={{ base: "premium-user-menu-item" }}
                 >
-                  {user?.fullName}
-                </motion.button>
-              </DropdownTrigger>
-              <DropdownMenu 
-                aria-label="User actions" 
-                className="premium-user-menu" 
-                itemClasses={{ base: "premium-user-menu-item" }}
-              >
-                <DropdownItem key="account" startContent={<UserCog size={16} />} onPress={() => onNavigate("/account")}>
-                  Account
-                </DropdownItem>
-                <DropdownItem key="logout" color="danger" className="text-red-500" startContent={<LogOut size={16} />} onPress={onLogout}>
-                  Logout
-                </DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
+                  <DropdownItem key="account" startContent={<UserCog size={16} />} onPress={() => onNavigate("/account")}>
+                    Account
+                  </DropdownItem>
+                  <DropdownItem key="logout" color="danger" className="text-red-500" startContent={<LogOut size={16} />} onPress={onLogout}>
+                    Logout
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button size="sm" radius="full" variant="light" className="nav-pill nav-pill-compact" onPress={() => onNavigate("/login")}>
+                  Login
+                </Button>
+                <Button size="sm" radius="full" variant="solid" className="nav-pill-active nav-pill-compact" onPress={() => onNavigate("/signup")}>
+                  Sign Up
+                </Button>
+              </div>
+            )}
           </NavbarItem>
         </NavbarContent>
 
         {/* Mobile/Tablet Navbar: only show on mobile/tablet (lg and below) */}
-        <div className="flex w-full items-center justify-between gap-2 px-2 py-1 lg:hidden">
+        <div className="flex w-full items-center justify-between gap-2 px-2 py-3 lg:hidden">
           {/* Left: Logo and name */}
           <div className="flex items-center gap-2 min-w-0 cursor-pointer" onClick={() => onNavigate("/home")}>
             <motion.div
@@ -217,7 +232,7 @@ export function AppLayout() {
 
       {/* Mobile Bottom Tab Bar */}
       <nav className="mobile-tab-bar lg:hidden">
-        {links.map(({ to, label, icon: Icon }) => {
+        {(user ? links : userLinks.filter((l) => l.to === "/home" || l.to === "/products")).map(({ to, label, icon: Icon }) => {
           const active = location.pathname === to;
           return (
             <motion.button
@@ -234,17 +249,38 @@ export function AppLayout() {
             </motion.button>
           );
         })}
-        <motion.button
-          type="button"
-          className="mobile-tab-item mobile-tab-logout"
-          onClick={onLogout}
-          whileTap={{ scale: 0.88 }}
-        >
-          <span className="mobile-tab-icon">
-            <LogOut size={20} />
-          </span>
-          <span className="mobile-tab-label">Logout</span>
-        </motion.button>
+        {!authLoading && (user ? (
+          <motion.button
+            type="button"
+            className="mobile-tab-item mobile-tab-logout"
+            onClick={onLogout}
+            whileTap={{ scale: 0.88 }}
+          >
+            <span className="mobile-tab-icon"><LogOut size={20} /></span>
+            <span className="mobile-tab-label">Logout</span>
+          </motion.button>
+        ) : (
+          <>
+            <motion.button
+              type="button"
+              className="mobile-tab-item"
+              onClick={() => onNavigate("/login")}
+              whileTap={{ scale: 0.88 }}
+            >
+              <span className="mobile-tab-icon"><LogIn size={20} /></span>
+              <span className="mobile-tab-label">Login</span>
+            </motion.button>
+            <motion.button
+              type="button"
+              className="mobile-tab-item"
+              onClick={() => onNavigate("/signup")}
+              whileTap={{ scale: 0.88 }}
+            >
+              <span className="mobile-tab-icon"><UserPlus size={20} /></span>
+              <span className="mobile-tab-label">Sign Up</span>
+            </motion.button>
+          </>
+        ))}
       </nav>
     </div>
   );

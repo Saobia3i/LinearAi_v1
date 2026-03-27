@@ -5,42 +5,97 @@ import { applyVoucher, checkout, getCart, getErrorMessage, removeFromCart } from
 import { AppButton as Button } from "../components/ui/AppButton";
 import type { CartResponse } from "../types";
 
+const APPLIED_VOUCHER_STORAGE_KEY = "linearai_applied_voucher";
+
 export function CartPage() {
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [voucher, setVoucher] = useState("");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  const normalizeVoucherCode = (value: string) => value.trim().toUpperCase();
+
+  const persistVoucher = (voucherCode: string) => {
+    window.sessionStorage.setItem(APPLIED_VOUCHER_STORAGE_KEY, voucherCode);
+  };
+
+  const clearPersistedVoucher = () => {
+    window.sessionStorage.removeItem(APPLIED_VOUCHER_STORAGE_KEY);
+  };
+
   const load = async (voucherCode?: string) => {
     const response = await getCart(voucherCode);
     setCart(response.data);
+    return response.data;
   };
 
   useEffect(() => {
-    load().finally(() => setLoading(false));
+    const storedVoucher = window.sessionStorage.getItem(APPLIED_VOUCHER_STORAGE_KEY);
+    const normalizedVoucher = storedVoucher ? normalizeVoucherCode(storedVoucher) : "";
+
+    if (normalizedVoucher) {
+      setVoucher(normalizedVoucher);
+    }
+
+    load(normalizedVoucher || undefined)
+      .then((data) => {
+        if (normalizedVoucher && !data.summary.voucherValid) {
+          clearPersistedVoucher();
+          setMessage({ text: data.summary.voucherMessage ?? "Voucher is no longer valid.", type: "error" });
+        }
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const onVoucher = async (e: FormEvent) => {
     e.preventDefault();
 
+    const normalizedVoucher = normalizeVoucherCode(voucher);
+    if (!normalizedVoucher) {
+      setMessage({ text: "Enter a voucher code first.", type: "error" });
+      clearPersistedVoucher();
+      return;
+    }
+
     try {
-      const response = await applyVoucher(voucher);
+      setVoucher(normalizedVoucher);
+      const response = await applyVoucher(normalizedVoucher);
       setCart(response.data);
       const msg = response.data.summary.voucherMessage ?? "Voucher checked.";
       setMessage({ text: msg, type: response.data.summary.voucherValid ? "success" : "error" });
+
+      if (response.data.summary.voucherValid) {
+        persistVoucher(normalizedVoucher);
+      } else {
+        clearPersistedVoucher();
+      }
     } catch (error) {
+      clearPersistedVoucher();
       setMessage({ text: getErrorMessage(error, "Voucher apply failed"), type: "error" });
     }
   };
 
   const onRemove = async (productId: number, durationMonths: number) => {
+    const normalizedVoucher = normalizeVoucherCode(voucher);
     await removeFromCart(productId, durationMonths);
-    await load(voucher || undefined);
+    const updatedCart = await load(normalizedVoucher || undefined);
+
+    if (normalizedVoucher) {
+      if (updatedCart.summary.voucherValid) {
+        persistVoucher(normalizedVoucher);
+      } else {
+        clearPersistedVoucher();
+        setMessage({ text: updatedCart.summary.voucherMessage ?? "Voucher is no longer valid.", type: "error" });
+      }
+    }
   };
 
   const onCheckout = async () => {
     try {
-      const response = await checkout(voucher || undefined);
+      const normalizedVoucher = normalizeVoucherCode(voucher);
+      const response = await checkout(normalizedVoucher || undefined);
       setMessage({ text: response.message ?? "Order placed", type: "success" });
+      clearPersistedVoucher();
       await load();
       setVoucher("");
     } catch (error) {
@@ -111,7 +166,7 @@ export function CartPage() {
               <div className="flex gap-2">
                 <Input
                   value={voucher}
-                  onValueChange={setVoucher}
+                  onValueChange={(value) => setVoucher(value.toUpperCase())}
                   placeholder="Voucher code (optional)"
                   radius="lg"
                   classNames={{
@@ -139,6 +194,11 @@ export function CartPage() {
                   </Button>
                 )}
               </div>
+              {voucher && cart.summary.voucherMessage && (
+                <p className={`text-sm ${cart.summary.voucherValid ? "premium-success" : "premium-danger"}`}>
+                  {cart.summary.voucherMessage}
+                </p>
+              )}
             </form>
 
             <div className="premium-summary-stack">

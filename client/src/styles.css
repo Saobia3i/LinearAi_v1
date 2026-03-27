@@ -1004,6 +1004,18 @@ select.admin-input {
   @apply grid gap-3 pt-4 sm:grid-cols-2 xl:grid-cols-4;
 }
 
+.premium-filter-bar {
+  @apply flex flex-col gap-3 sm:flex-row sm:items-center;
+}
+
+.premium-filter-input {
+  @apply flex-1;
+}
+
+.premium-filter-select {
+  @apply sm:w-[220px];
+}
+
 .premium-data-table {
   width: 100%;
   color: var(--theme-muted);
@@ -1070,6 +1082,42 @@ select.admin-input {
 
 .admin-action-delete {
   background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+
+.account-form-input {
+  width: 100%;
+  border: 1.5px solid var(--theme-border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--theme-surface) 92%, transparent);
+  color: var(--theme-text);
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  padding: 0.95rem 1rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.account-form-input::placeholder {
+  color: var(--theme-muted);
+}
+
+.account-form-input:hover,
+.account-form-input:focus {
+  border-color: var(--theme-blue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-blue) 12%, transparent);
+}
+
+.account-form-input-error,
+.account-form-input-error:hover,
+.account-form-input-error:focus {
+  border-color: var(--theme-red);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-red) 12%, transparent);
+}
+
+.account-form-textarea {
+  min-height: 150px;
+  resize: vertical;
+  line-height: 1.6;
 }
 
 .auth-page {
@@ -1307,4 +1355,42 @@ select.admin-input {
 .success-icon,
 .error-icon {
   @apply mb-4 block text-5xl;
+}
+
+/* ── Reviews Carousel ── */
+.reviews-carousel-wrap {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.reviews-carousel-track {
+  position: relative;
+  width: 100%;
+  /* height driven by tallest card */
+  min-height: 200px;
+}
+
+.reviews-carousel-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--theme-border);
+  background: var(--theme-surface);
+  box-shadow: var(--theme-shadow);
+  min-height: 180px;
+}
+
+@media (min-width: 768px) {
+  .reviews-carousel-track {
+    min-height: 200px;
+  }
+  .reviews-carousel-card {
+    width: calc((100% - 3rem) / 3);
+  }
 }

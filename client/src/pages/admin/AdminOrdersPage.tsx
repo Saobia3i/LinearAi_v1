@@ -7,6 +7,8 @@ import type { AdminOrderSummary } from "../../types";
 export function AdminOrdersPage() {
   const [orders, setOrders] = useState<AdminOrderSummary[]>([]);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
 
   const load = async () => {
     const res = await getAdminOrders();
@@ -39,6 +41,19 @@ export function AdminOrdersPage() {
           ? "premium-chip-red"
           : "premium-chip-blue";
 
+  const visibleOrders = orders.filter((order) => {
+    const searchText = search.trim().toLowerCase();
+    const matchesSearch =
+      searchText.length === 0 ||
+      order.id.toString().includes(searchText) ||
+      order.clientEmail.toLowerCase().includes(searchText) ||
+      order.product.toLowerCase().includes(searchText);
+
+    const matchesStatus = statusFilter === "All" || order.paymentStatus === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <section className="premium-section">
       <div className="premium-section-head">
@@ -47,6 +62,22 @@ export function AdminOrdersPage() {
           <h2 className="section-title">Order Management</h2>
         </div>
         <span className="premium-chip-blue">{orders.length} orders</span>
+      </div>
+
+      <div className="premium-filter-bar">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by order id, email, or product"
+          className="admin-input premium-filter-input"
+        />
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="admin-input premium-filter-select">
+          <option value="All">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Paid">Paid</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
       </div>
 
       {message && (
@@ -68,7 +99,7 @@ export function AdminOrdersPage() {
             <TableColumn className="min-w-[220px]">Action</TableColumn>
           </TableHeader>
           <TableBody emptyContent="No orders found.">
-            {orders.map((order) => (
+            {visibleOrders.map((order) => (
               <TableRow key={order.id}>
                 <TableCell className="text-[var(--theme-muted)]">#{order.id}</TableCell>
                 <TableCell className="whitespace-nowrap text-[var(--theme-text)]">{order.clientEmail}</TableCell>
@@ -113,10 +144,10 @@ export function AdminOrdersPage() {
 
       {/* Mobile: cards */}
       <div className="flex flex-col gap-3 md:hidden">
-        {orders.length === 0 && (
+        {visibleOrders.length === 0 && (
           <p className="text-center text-[var(--theme-muted)] py-10">No orders found.</p>
         )}
-        {orders.map((order) => (
+        {visibleOrders.map((order) => (
           <div key={order.id} className="order-card">
             {/* Top row: id + status */}
             <div className="order-card-top">

@@ -13,6 +13,7 @@ namespace Linear_v1.Data
         public DbSet<Order> Orders { get; set; } = null!;
         public DbSet<ProductSubscription> ProductSubscriptions { get; set; } = null!;
         public DbSet<Voucher> Vouchers { get; set; } = null!;
+        public DbSet<Feedback> Feedbacks { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -60,6 +61,12 @@ namespace Linear_v1.Data
                 .HasOne(s => s.Product)
                 .WithMany(p => p.Subscriptions)
                 .HasForeignKey(s => s.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Feedback>()
+                .HasOne(f => f.User)
+                .WithMany()
+                .HasForeignKey(f => f.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

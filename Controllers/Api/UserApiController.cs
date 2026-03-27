@@ -437,6 +437,8 @@ namespace Linear_v1.Controllers.Api
                         Id = v.Id,
                         Code = v.Code,
                         DiscountPercent = v.DiscountPercent,
+                        MaxDiscountAmount = v.MaxDiscountAmount,
+                        MinimumOrderAmount = v.MinimumOrderAmount,
                         UsageLimit = v.UsageLimit,
                         UsedCount = v.UsedCount,
                         IsActive = v.IsActive,
@@ -446,10 +448,27 @@ namespace Linear_v1.Controllers.Api
 
                 if (voucher != null)
                 {
-                    model.VoucherCode = voucherCode;
-                    model.VoucherValid = true;
-                    model.VoucherMessage = $"Voucher applied: {voucher.DiscountPercent}% off";
-                    model.VoucherDiscount = Math.Round(afterBundle * voucher.DiscountPercent / 100, 2);
+                    if (voucher.MinimumOrderAmount > 0 && afterBundle < voucher.MinimumOrderAmount)
+                    {
+                        model.VoucherValid = false;
+                        model.VoucherMessage = $"Minimum order for this voucher is {voucher.MinimumOrderAmount:F2}.";
+                    }
+                    else
+                    {
+                        model.VoucherCode = voucherCode;
+                        model.VoucherValid = true;
+
+                        var voucherDiscount = Math.Round(afterBundle * voucher.DiscountPercent / 100, 2);
+                        if (voucher.MaxDiscountAmount > 0)
+                        {
+                            voucherDiscount = Math.Min(voucherDiscount, voucher.MaxDiscountAmount);
+                        }
+
+                        model.VoucherDiscount = voucherDiscount;
+                        model.VoucherMessage = voucher.MaxDiscountAmount > 0
+                            ? $"Voucher applied: {voucher.DiscountPercent}% off up to {voucher.MaxDiscountAmount:F2}."
+                            : $"Voucher applied: {voucher.DiscountPercent}% off";
+                    }
                 }
                 else
                 {
@@ -483,6 +502,8 @@ namespace Linear_v1.Controllers.Api
             public int Id { get; set; }
             public string Code { get; set; } = string.Empty;
             public decimal DiscountPercent { get; set; }
+            public decimal MaxDiscountAmount { get; set; }
+            public decimal MinimumOrderAmount { get; set; }
             public int? UsageLimit { get; set; }
             public int UsedCount { get; set; }
             public bool IsActive { get; set; }

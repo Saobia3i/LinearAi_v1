@@ -6,9 +6,11 @@ import type {
   AuthUser,
   CartResponse,
   DashboardSummary,
+  FeedbackItem,
   OrderSummary,
   Product,
   ProductSubscription,
+  PublicReview,
   VoucherSummary
 } from "./types";
 
@@ -56,7 +58,7 @@ export async function logout() {
 }
 
 export async function getProducts() {
-  const response = await api.get<ApiResponse<Product[]>>("api/user/products");
+  const response = await api.get<ApiResponse<Product[]>>("api/products");
   return response.data;
 }
 
@@ -167,5 +169,25 @@ export async function getAdminOrders() {
 
 export async function updateAdminOrderStatus(id: number, status: string) {
   const response = await api.patch<ApiResponse<unknown>>(`api/orders/${id}/status`, { status });
+  return response.data;
+}
+
+export async function submitFeedback(payload: { message: string; type: string; subject?: string }) {
+  const response = await api.post<ApiResponse<null>>("api/feedback", payload);
+  return response.data;
+}
+
+export async function getPublicReviews() {
+  const response = await api.get<ApiResponse<PublicReview[]>>("api/feedback/public");
+  return response.data;
+}
+
+export async function getAdminFeedbacks() {
+  const response = await api.get<ApiResponse<FeedbackItem[]>>("api/feedback/admin");
+  return response.data;
+}
+
+export async function toggleFeedbackPost(id: number) {
+  const response = await api.patch<ApiResponse<{ isPosted: boolean }>>(`api/feedback/${id}/post`);
   return response.data;
 }
