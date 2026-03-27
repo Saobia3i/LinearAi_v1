@@ -1,4 +1,4 @@
-import { Card, CardBody, Chip } from "@heroui/react";
+import { Chip } from "@heroui/react";
 import { ArrowRight, Quote, ShoppingCart, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -39,13 +39,13 @@ const HERO_SLIDES = [
     tag: "n8n Workflows",
     headline: "No-Code Power.",
     sub: "Drag-and-drop automation workflows connected to 400+ apps. Ready in minutes.",
-    accent: "#3b82f6",
+    accent: "#c9911f",
   },
   {
     tag: "AI Integrations",
     headline: "Smarter Pipelines.",
     sub: "Connect GPT-4, Claude, and custom models to your business data seamlessly.",
-    accent: "#a855f7",
+    accent: "#c24a2b",
   },
   {
     tag: "Scripts & Tools",
@@ -182,86 +182,87 @@ export function UserHomePage() {
   const slide = HERO_SLIDES[heroIndex];
   const featured = data?.featuredProducts ?? [];
   const banner = featured[bannerIndex];
+  const bannerAccent = HERO_SLIDES[bannerIndex % HERO_SLIDES.length]?.accent ?? "var(--theme-red)";
 
   return (
     <section className="premium-section">
 
       {/* ── HERO — Animated Slides ── */}
-      <Card className="premium-hero overflow-hidden">
-        <CardBody className="p-0">
+      <div className="premium-hero-shell">
+        <div className="premium-hero-grid">
           <div
-            className="premium-hero-stage relative"
+            className="premium-hero-copy premium-hero-copy-centered"
             style={{
-              background: `linear-gradient(135deg, var(--theme-surface-strong) 0%, color-mix(in srgb, ${slide.accent} 10%, var(--theme-surface-strong)) 100%)`,
-              transition: "background 0.5s ease",
+              opacity: animating ? 0 : 1,
+              transform: animating ? "translateY(14px)" : "translateY(0)",
+              transition: "opacity 0.35s ease, transform 0.35s ease",
             }}
           >
-            {/* Slide content */}
-            <div
-              className="premium-hero-copy"
+            <Chip
+              size="sm"
+              variant="flat"
+              className="premium-badge premium-hero-chip"
               style={{
-                opacity: animating ? 0 : 1,
-                transform: animating ? "translateY(14px)" : "translateY(0)",
-                transition: "opacity 0.35s ease, transform 0.35s ease",
+                background: `color-mix(in srgb, ${slide.accent} 12%, transparent)`,
+                color: slide.accent,
+                border: `1px solid color-mix(in srgb, ${slide.accent} 32%, transparent)`,
               }}
             >
-              <Chip
-                size="sm"
-                variant="flat"
-                className="premium-badge"
-                style={{
-                  background: `color-mix(in srgb, ${slide.accent} 15%, transparent)`,
-                  color: slide.accent,
-                  border: `1px solid color-mix(in srgb, ${slide.accent} 35%, transparent)`,
-                }}
+              {slide.tag}
+            </Chip>
+
+            <h1 className="premium-display premium-hero-title">
+              {slide.headline}{" "}
+              <span style={{ color: slide.accent }}>Built for you.</span>
+            </h1>
+            <p className="premium-card-desc premium-hero-sub">{slide.sub}</p>
+
+            <div className="premium-hero-actions">
+              <Button
+                radius="full"
+                size="lg"
+                className="font-bold"
+                style={{ background: slide.accent, color: "#fff" }}
+                onPress={() => navigate("/products")}
+                startContent={<Zap size={16} />}
               >
-                {slide.tag}
-              </Chip>
-
-              <h1 className="premium-display">
-                {slide.headline}{" "}
-                <span style={{ color: slide.accent }}>Built for you.</span>
-              </h1>
-              <p className="premium-card-desc text-base max-w-xl">{slide.sub}</p>
-
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <Button
-                  radius="full"
-                  size="lg"
-                  className="font-bold"
-                  style={{ background: slide.accent, color: "#fff" }}
-                  onPress={() => navigate("/products")}
-                  startContent={<Zap size={16} />}
-                >
-                  Explore Products
+                Explore Products
                 </Button>
               </div>
-            </div>
 
-            {/* Dots */}
-            <div className="flex min-h-[8px] items-center gap-2">
-              {HERO_SLIDES.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => goHero(i)}
-                  className="rounded-full transition-all duration-300"
-                  style={{
-                    width: i === heroIndex ? "28px" : "8px",
-                    height: "8px",
-                    background: i === heroIndex ? slide.accent : "var(--theme-border)",
-                  }}
-                />
-              ))}
+            <div className="premium-hero-kpis premium-hero-kpis-inline">
+              <div className="premium-hero-kpi">
+                <span className="premium-label">Focus</span>
+                <strong>Automation-first products</strong>
+              </div>
+              <div className="premium-hero-kpi">
+                <span className="premium-label">Checkout</span>
+                <strong>Voucher-ready pricing flow</strong>
+              </div>
+              <div className="premium-hero-kpi">
+                <span className="premium-label">Ops</span>
+                <strong>Admin-managed delivery pipeline</strong>
+              </div>
             </div>
-
-            {/* Decorative glow */}
-            <div
-              className="pointer-events-none absolute right-[-80px] top-[-80px] rounded-full opacity-[0.08] blur-3xl"
-              style={{ width: "350px", height: "350px", background: slide.accent, transition: "background 0.5s ease" }}
-            />
           </div>
-        </CardBody>
-      </Card>
+
+        </div>
+
+        <div className="premium-hero-dots premium-hero-dots-centered">
+          {HERO_SLIDES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goHero(i)}
+              className="rounded-full transition-all duration-300"
+              style={{
+                width: i === heroIndex ? "34px" : "9px",
+                height: "9px",
+                background: i === heroIndex ? slide.accent : "var(--theme-border)",
+              }}
+            />
+          ))}
+        </div>
+      </div>
 
       {/* ── VOUCHER STRIP ── */}
       {data?.featuredVoucherCode && (
@@ -314,22 +315,26 @@ export function UserHomePage() {
               <div
                 className="home-feature-banner relative overflow-hidden rounded-2xl border"
                 style={{
-                  background: "var(--theme-surface-strong)",
+                  background: `linear-gradient(135deg, var(--theme-surface-strong) 0%, color-mix(in srgb, ${bannerAccent} 12%, var(--theme-surface-strong)) 100%)`,
                   borderColor: "var(--theme-border)",
                 }}
               >
                 {/* Accent glow */}
                 <div
                   className="pointer-events-none absolute left-[-60px] top-[-60px] rounded-full opacity-[0.07] blur-2xl"
-                  style={{ width: "280px", height: "280px", background: "var(--theme-red)" }}
+                  style={{ width: "280px", height: "280px", background: bannerAccent }}
+                />
+                <div
+                  className="pointer-events-none absolute bottom-[-90px] right-[-70px] rounded-full opacity-[0.10] blur-3xl"
+                  style={{ width: "240px", height: "240px", background: bannerAccent }}
                 />
 
                 <div className="relative flex h-full flex-col gap-5 p-6 sm:grid sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center">
                   {/* Left */}
                   <div className="flex-1 space-y-3">
                     <Chip size="sm" variant="flat" className="premium-badge premium-chip-red">Featured</Chip>
-                    <h3 className="text-2xl font-black text-[var(--theme-text)]">{banner.title}</h3>
-                    <p className="premium-card-desc max-w-md">{banner.shortDescription}</p>
+                    <h3 className="home-feature-title text-2xl font-black text-[var(--theme-text)]">{banner.title}</h3>
+                    <p className="premium-card-desc home-feature-desc max-w-md">{banner.shortDescription}</p>
 
                     {/* Plan pills */}
                     <div className="home-feature-plan-strip pt-1">
@@ -368,8 +373,8 @@ export function UserHomePage() {
                   </div>
 
                   {/* Right — price + CTA */}
-                  <div className="flex shrink-0 flex-col gap-3 sm:items-end">
-                    <div className="text-left sm:text-right">
+                  <div className="home-feature-side flex shrink-0 flex-col gap-3 sm:items-end">
+                    <div className="home-feature-price-block text-left sm:text-right">
                       <p className="premium-stat-label">Selected Plan</p>
                       <p
                         className="text-3xl font-black"
@@ -401,16 +406,16 @@ export function UserHomePage() {
                 {featured.length > 1 && (
                   <div className="flex items-center justify-center gap-2 pb-4">
                     {featured.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => goBanner(i)}
-                        className="rounded-full transition-all duration-300"
-                        style={{
-                          width: i === bannerIndex ? "24px" : "7px",
-                          height: "7px",
-                          background: i === bannerIndex ? "var(--theme-red)" : "var(--theme-border)",
-                        }}
-                      />
+	                      <button
+	                        key={i}
+	                        onClick={() => goBanner(i)}
+	                        className="rounded-full transition-all duration-300"
+	                        style={{
+	                          width: i === bannerIndex ? "24px" : "7px",
+	                          height: "7px",
+	                          background: i === bannerIndex ? bannerAccent : "var(--theme-border)",
+	                        }}
+	                      />
                     ))}
                   </div>
                 )}
