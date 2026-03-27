@@ -27,7 +27,8 @@ export function OrdersPage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Desktop: table */}
+      <div className="hidden md:block responsive-table-wrap">
         <Table aria-label="Orders table" className="premium-table">
           <TableHeader>
             <TableColumn>#</TableColumn>
@@ -68,7 +69,7 @@ export function OrdersPage() {
                     ? new Date(order.subscriptionEndDate).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "2-digit",
-                        year: "2-digit"
+                        year: "2-digit",
                       })
                     : "-"}
                 </TableCell>
@@ -76,6 +77,63 @@ export function OrdersPage() {
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile: cards */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {orders.length === 0 && (
+          <p className="text-center text-[var(--theme-muted)] py-10">No orders yet.</p>
+        )}
+        {orders.map((order) => (
+          <div key={order.id} className="order-card">
+            {/* Top row: id + status */}
+            <div className="order-card-top">
+              <span className="order-card-id">Order #{order.id}</span>
+              <Chip size="sm" variant="flat" color={statusColor(order.paymentStatus)}>
+                {order.paymentStatus}
+              </Chip>
+            </div>
+
+            {/* Product name */}
+            <p className="order-card-product">{order.productTitle}</p>
+
+            {/* Details grid */}
+            <div className="order-card-grid">
+              <div className="order-card-field">
+                <span className="order-card-label">Plan</span>
+                <span className="order-card-value">{order.durationMonths ?? 0} months</span>
+              </div>
+              <div className="order-card-field">
+                <span className="order-card-label">Final Price</span>
+                <span className="order-card-value font-bold">৳{order.finalAmount}</span>
+              </div>
+              {order.discountAmount && order.discountAmount > 0 ? (
+                <div className="order-card-field">
+                  <span className="order-card-label">Discount</span>
+                  <span className="order-card-value text-[var(--theme-green)]">-৳{order.discountAmount}</span>
+                </div>
+              ) : null}
+              {order.voucherCode && (
+                <div className="order-card-field">
+                  <span className="order-card-label">Voucher</span>
+                  <span className="font-mono text-xs text-[var(--theme-yellow)]">{order.voucherCode}</span>
+                </div>
+              )}
+              {order.subscriptionEndDate && (
+                <div className="order-card-field">
+                  <span className="order-card-label">Expires</span>
+                  <span className="order-card-value">
+                    {new Date(order.subscriptionEndDate).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "2-digit",
+                    })}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );

@@ -1,6 +1,7 @@
-import { Button, Chip, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
+import { Chip, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { getAdminOrders, getErrorMessage, updateAdminOrderStatus } from "../../api";
+import { AppButton as Button } from "../../components/ui/AppButton";
 import type { AdminOrderSummary } from "../../types";
 
 export function AdminOrdersPage() {
@@ -29,6 +30,15 @@ export function AdminOrdersPage() {
   const statusColor = (s: string) =>
     s === "Paid" ? "success" : s === "Pending" ? "warning" : s === "Cancelled" ? "danger" : "default";
 
+  const statusClassName = (s: string) =>
+    s === "Paid"
+      ? "premium-chip-green"
+      : s === "Pending"
+        ? "premium-chip-yellow"
+        : s === "Cancelled"
+          ? "premium-chip-red"
+          : "premium-chip-blue";
+
   return (
     <section className="premium-section">
       <div className="premium-section-head">
@@ -39,47 +49,57 @@ export function AdminOrdersPage() {
         <span className="premium-chip-blue">{orders.length} orders</span>
       </div>
 
-      {message && <p className={`text-sm ${message.type === "success" ? "premium-success" : "premium-danger"}`}>{message.text}</p>}
+      {message && (
+        <p className={`text-sm ${message.type === "success" ? "premium-success" : "premium-danger"}`}>
+          {message.text}
+        </p>
+      )}
 
-      <div className="overflow-x-auto">
+      {/* Desktop: table */}
+      <div className="hidden md:block responsive-table-wrap">
         <Table aria-label="Admin orders table" className="premium-table">
           <TableHeader>
-            <TableColumn>#</TableColumn>
-            <TableColumn>Client Email</TableColumn>
-            <TableColumn>Product</TableColumn>
-            <TableColumn>Price</TableColumn>
-            <TableColumn>Date</TableColumn>
-            <TableColumn>Status</TableColumn>
-            <TableColumn>Action</TableColumn>
+            <TableColumn className="w-[72px]">#</TableColumn>
+            <TableColumn className="min-w-[220px]">Client Email</TableColumn>
+            <TableColumn className="min-w-[220px]">Product</TableColumn>
+            <TableColumn className="w-[120px]">Price</TableColumn>
+            <TableColumn className="w-[130px]">Date</TableColumn>
+            <TableColumn className="w-[120px]">Status</TableColumn>
+            <TableColumn className="min-w-[220px]">Action</TableColumn>
           </TableHeader>
           <TableBody emptyContent="No orders found.">
             {orders.map((order) => (
               <TableRow key={order.id}>
                 <TableCell className="text-[var(--theme-muted)]">#{order.id}</TableCell>
-                <TableCell className="text-[var(--theme-text)]">{order.clientEmail}</TableCell>
+                <TableCell className="whitespace-nowrap text-[var(--theme-text)]">{order.clientEmail}</TableCell>
                 <TableCell className="font-semibold text-[var(--theme-text)]">{order.product}</TableCell>
-                <TableCell className="text-[var(--theme-text)]">৳{order.price}</TableCell>
+                <TableCell className="whitespace-nowrap text-[var(--theme-text)]">৳{order.price}</TableCell>
                 <TableCell className="text-xs text-[var(--theme-muted)]">
                   {new Date(order.orderDate).toLocaleDateString("en-GB", {
                     day: "2-digit",
                     month: "2-digit",
-                    year: "numeric"
+                    year: "numeric",
                   })}
                 </TableCell>
                 <TableCell>
-                  <Chip size="sm" variant="flat" color={statusColor(order.paymentStatus)}>
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color={statusColor(order.paymentStatus)}
+                    className={statusClassName(order.paymentStatus)}
+                  >
                     {order.paymentStatus}
                   </Chip>
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-2">
                     {order.paymentStatus !== "Paid" && (
-                      <Button size="sm" radius="full" variant="flat" color="success" onPress={() => onMark(order.id, "Paid")}>
+                      <Button size="sm" radius="full" variant="solid" className="bg-green-600 text-white font-semibold" onPress={() => onMark(order.id, "Paid")}>
                         Mark Paid
                       </Button>
                     )}
                     {order.paymentStatus !== "Pending" && (
-                      <Button size="sm" radius="full" variant="flat" color="warning" onPress={() => onMark(order.id, "Pending")}>
+                      <Button size="sm" radius="full" variant="solid" className="bg-yellow-500 text-black font-semibold" onPress={() => onMark(order.id, "Pending")}>
                         Mark Pending
                       </Button>
                     )}
@@ -89,6 +109,60 @@ export function AdminOrdersPage() {
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile: cards */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {orders.length === 0 && (
+          <p className="text-center text-[var(--theme-muted)] py-10">No orders found.</p>
+        )}
+        {orders.map((order) => (
+          <div key={order.id} className="order-card">
+            {/* Top row: id + status */}
+            <div className="order-card-top">
+              <span className="order-card-id">Order #{order.id}</span>
+              <Chip size="sm" variant="flat" color={statusColor(order.paymentStatus)} className={statusClassName(order.paymentStatus)}>
+                {order.paymentStatus}
+              </Chip>
+            </div>
+
+            {/* Product + email */}
+            <p className="order-card-product">{order.product}</p>
+            <p className="text-xs text-[var(--theme-muted)] mb-3 truncate">{order.clientEmail}</p>
+
+            {/* Details grid */}
+            <div className="order-card-grid">
+              <div className="order-card-field">
+                <span className="order-card-label">Price</span>
+                <span className="order-card-value font-bold">৳{order.price}</span>
+              </div>
+              <div className="order-card-field">
+                <span className="order-card-label">Date</span>
+                <span className="order-card-value">
+                  {new Date(order.orderDate).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[var(--theme-border)]">
+              {order.paymentStatus !== "Paid" && (
+                <Button size="sm" radius="full" variant="solid" className="bg-green-600 text-white font-semibold" onPress={() => onMark(order.id, "Paid")}>
+                  Mark Paid
+                </Button>
+              )}
+              {order.paymentStatus !== "Pending" && (
+                <Button size="sm" radius="full" variant="solid" className="bg-yellow-500 text-black font-semibold" onPress={() => onMark(order.id, "Pending")}>
+                  Mark Pending
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );

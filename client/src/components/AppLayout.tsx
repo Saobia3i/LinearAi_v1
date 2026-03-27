@@ -1,5 +1,4 @@
 import {
-  Button,
   Dropdown,
   DropdownItem,
   DropdownMenu,
@@ -8,11 +7,7 @@ import {
   NavbarBrand,
   NavbarContent,
   NavbarItem,
-  NavbarMenu,
-  NavbarMenuItem,
-  NavbarMenuToggle
 } from "@heroui/react";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { MoonIcon, SunIcon } from "@heroicons/react/24/outline";
 import {
   LayoutDashboard,
@@ -22,13 +17,14 @@ import {
   ShieldCheck,
   ShoppingCart,
   TicketPercent,
-  UserCog
+  UserCog,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { AnimatePresence, motion } from "framer-motion";
+import { AppButton as Button } from "./ui/AppButton";
 
 const userLinks = [
   { to: "/home", label: "Home", icon: LayoutDashboard },
@@ -40,9 +36,9 @@ const userLinks = [
 
 const adminLinks = [
   { to: "/admin", label: "Dashboard", icon: ShieldCheck },
-  { to: "/admin/orders", label: "Admin Orders", icon: ReceiptText },
-  { to: "/admin/products", label: "Admin Products", icon: Package },
-  { to: "/admin/vouchers", label: "Admin Vouchers", icon: TicketPercent }
+  { to: "/admin/orders", label: "Orders", icon: ReceiptText },
+  { to: "/admin/products", label: "Products", icon: Package },
+  { to: "/admin/vouchers", label: "Vouchers", icon: TicketPercent }
 ];
 
 export function AppLayout() {
@@ -50,7 +46,6 @@ export function AppLayout() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showNavbar, setShowNavbar] = useState(true);
 
   const isAdmin = user?.role === "Admin";
@@ -67,7 +62,6 @@ export function AppLayout() {
         setShowNavbar(true);
       } else if (currentScrollY > lastScrollY) {
         setShowNavbar(false);
-        setIsMenuOpen(false);
       } else {
         setShowNavbar(true);
       }
@@ -80,13 +74,11 @@ export function AppLayout() {
   }, []);
 
   const onNavigate = (to: string) => {
-    setIsMenuOpen(false);
     navigate(to);
   };
 
   const onLogout = async () => {
     await logoutAction();
-    setIsMenuOpen(false);
     navigate("/login");
   };
 
@@ -94,22 +86,17 @@ export function AppLayout() {
     <div className="page-shell">
       <Navbar
         isBordered={false}
-        isMenuOpen={isMenuOpen}
-        onMenuOpenChange={setIsMenuOpen}
         maxWidth="2xl"
         className={`premium-navbar premium-navbar-floating ${showNavbar ? "navbar-visible" : "navbar-hidden"}`}>
-        <NavbarContent justify="start" className="basis-0 grow gap-2">
-          <NavbarMenuToggle className="mr-1 xl:hidden" srOnlyText="Toggle navigation menu">
-            {isMenuOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
-          </NavbarMenuToggle>
-
-          <NavbarBrand className="gap-3 cursor-pointer navbar-brand-wrap" onClick={() => onNavigate("/home")}>
+        {/* Desktop Navbar: only show on lg+ */}
+        <NavbarContent justify="start" className="basis-0 grow gap-2 hidden lg:flex">
+          <NavbarBrand className="gap-3 cursor-pointer navbar-brand-wrap" onClick={() => onNavigate("/home")}> 
             <motion.div 
               className="brand-mark"
               whileHover={{ rotate: 5, scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <img src="https://ik.imagekit.io/ekb0d0it0/avif%20favicon.avif" alt="Linear AI logo" />
+              <img src={import.meta.env.VITE_LOGO_URL ?? "https://ik.imagekit.io/ekb0d0it0/avif%20favicon.avif"} alt="Linear AI logo" />
             </motion.div>
             <div className="flex flex-col">
               <p className="text-sm font-black uppercase tracking-[0.3em] text-[var(--theme-red)]">Linear AI</p>
@@ -118,31 +105,28 @@ export function AppLayout() {
           </NavbarBrand>
         </NavbarContent>
 
-        <NavbarContent justify="center" className="navbar-center-toggle hidden xl:flex">
-          <NavbarItem>
-            <Button
-              isIconOnly
-              radius="full"
-              variant="light"
-              className="theme-toggle"
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-              onPress={toggleTheme}>
-              <motion.div
-                initial={false}
-                animate={{ rotate: theme === "dark" ? 0 : 180, scale: 1 }}
-                transition={{ type: "spring", stiffness: 200, damping: 10 }}
-              >
-                {theme === "dark" ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
-              </motion.div>
-            </Button>
-          </NavbarItem>
-        </NavbarContent>
-
-        <NavbarContent justify="end" className="navbar-desktop-actions hidden grow basis-0 xl:flex">
+        <NavbarContent justify="center" className="hidden lg:flex">
           <div className="flex items-center gap-1">
+            <NavbarItem>
+              <Button
+                isIconOnly
+                radius="full"
+                variant="light"
+                className="theme-toggle"
+                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                onPress={toggleTheme}>
+                <motion.div
+                  initial={false}
+                  animate={{ rotate: theme === "dark" ? 0 : 180, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 10 }}
+                >
+                  {theme === "dark" ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+                </motion.div>
+              </Button>
+            </NavbarItem>
+
             {desktopLinks.map(({ to, label }) => {
               const active = location.pathname === to;
-
               return (
                 <NavbarItem key={to}>
                   <Button
@@ -157,8 +141,10 @@ export function AppLayout() {
               );
             })}
           </div>
+        </NavbarContent>
 
-          <NavbarItem className="ml-2">
+        <NavbarContent justify="end" className="hidden basis-0 lg:flex">
+          <NavbarItem>
             <Dropdown placement="bottom-end">
               <DropdownTrigger>
                 <motion.button 
@@ -186,72 +172,38 @@ export function AppLayout() {
           </NavbarItem>
         </NavbarContent>
 
-        <NavbarContent justify="end" className="gap-2 xl:hidden">
-          <NavbarItem>
-            <Button
-              isIconOnly
-              radius="full"
-              variant="light"
-              className="theme-toggle"
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-              onPress={toggleTheme}>
-              {theme === "dark" ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
-            </Button>
-          </NavbarItem>
-        </NavbarContent>
-
-        <NavbarMenu className="premium-menu pt-24">
-          <motion.div 
-            className="menu-panel"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
+        {/* Mobile/Tablet Navbar: only show on mobile/tablet (lg and below) */}
+        <div className="flex w-full items-center justify-between gap-2 px-2 py-1 lg:hidden">
+          {/* Left: Logo and name */}
+          <div className="flex items-center gap-2 min-w-0 cursor-pointer" onClick={() => onNavigate("/home")}>
+            <motion.div
+              className="brand-mark"
+              whileHover={{ rotate: 5, scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <img src="https://ik.imagekit.io/ekb0d0it0/avif%20favicon.avif" alt="Linear AI logo" className="h-10 w-10 object-cover rounded-[1.1rem]" />
+            </motion.div>
+            <div className="flex flex-col min-w-0">
+              <p className="text-sm font-black uppercase tracking-[0.3em] text-[var(--theme-red)] truncate">Linear AI</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--theme-text)] opacity-50 truncate">Automation Store</p>
+            </div>
+          </div>
+          {/* Right: Theme toggle */}
+          <Button
+            isIconOnly
+            radius="full"
+            variant="light"
+            className="theme-toggle ml-auto"
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            onPress={toggleTheme}
           >
-            <div className="mb-4 rounded-[2rem] border border-[var(--theme-border)] bg-[var(--theme-surface)] p-6 shadow-xl">
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[var(--theme-red)]">Navigation</p>
-              <p className="mt-2 text-xl font-bold text-[var(--theme-text)]">{user?.fullName}</p>
-              <p className="text-sm text-[var(--theme-muted)]">{user?.email}</p>
-            </div>
-
-            <div className="grid gap-2">
-              {links.map(({ to, label, icon: Icon }, idx) => {
-                const active = location.pathname === to;
-
-                return (
-                  <NavbarMenuItem key={to}>
-                    <motion.button
-                      type="button"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                      className={`mobile-nav-item ${active ? "mobile-nav-item-active" : ""}`}
-                      onClick={() => onNavigate(to)}>
-                      <span className="mobile-nav-icon">
-                        <Icon size={18} />
-                      </span>
-                      <span className="text-sm font-bold">{label}</span>
-                    </motion.button>
-                  </NavbarMenuItem>
-                );
-              })}
-            </div>
-
-            <NavbarMenuItem className="mt-6">
-              <Button
-                radius="full"
-                variant="flat"
-                className="logout-pill h-14 w-full font-bold"
-                startContent={<LogOut size={18} />}
-                onPress={onLogout}>
-                Sign Out
-              </Button>
-            </NavbarMenuItem>
-          </motion.div>
-        </NavbarMenu>
+            {theme === "dark" ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+          </Button>
+        </div>
       </Navbar>
 
       <AnimatePresence mode="wait">
-        <motion.main 
+        <motion.main
           key={location.pathname}
           className="page-container"
           initial={{ opacity: 0, y: 10, filter: "blur(10px)" }}
@@ -262,6 +214,38 @@ export function AppLayout() {
           <Outlet />
         </motion.main>
       </AnimatePresence>
+
+      {/* Mobile Bottom Tab Bar */}
+      <nav className="mobile-tab-bar lg:hidden">
+        {links.map(({ to, label, icon: Icon }) => {
+          const active = location.pathname === to;
+          return (
+            <motion.button
+              key={to}
+              type="button"
+              className={`mobile-tab-item ${active ? "mobile-tab-item-active" : ""}`}
+              onClick={() => onNavigate(to)}
+              whileTap={{ scale: 0.88 }}
+            >
+              <span className="mobile-tab-icon">
+                <Icon size={20} />
+              </span>
+              <span className="mobile-tab-label">{label}</span>
+            </motion.button>
+          );
+        })}
+        <motion.button
+          type="button"
+          className="mobile-tab-item mobile-tab-logout"
+          onClick={onLogout}
+          whileTap={{ scale: 0.88 }}
+        >
+          <span className="mobile-tab-icon">
+            <LogOut size={20} />
+          </span>
+          <span className="mobile-tab-label">Logout</span>
+        </motion.button>
+      </nav>
     </div>
   );
 }

@@ -1,8 +1,9 @@
-import { Button, Card, CardBody, Chip } from "@heroui/react";
+import { Card, CardBody, Chip } from "@heroui/react";
 import { CalendarDays, LogOut, Mail, Phone, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAccount } from "../api";
+import { AppButton as Button } from "../components/ui/AppButton";
 import { useAuth } from "../context/AuthContext";
 import type { AccountInfo } from "../types";
 

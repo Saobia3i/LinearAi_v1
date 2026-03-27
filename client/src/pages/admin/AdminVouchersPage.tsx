@@ -1,10 +1,12 @@
-import { Button, Card, CardBody, Chip, Input, Pagination } from "@heroui/react";
+import { Card, CardBody, Chip, Pagination } from "@heroui/react";
 import { Plus, Ticket } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createAdminVoucher, getAdminVouchers, getErrorMessage, toggleAdminVoucher } from "../../api";
+import { AppButton as Button } from "../../components/ui/AppButton";
 import type { VoucherSummary } from "../../types";
 
 export function AdminVouchersPage() {
+
   const [vouchers, setVouchers] = useState<VoucherSummary[]>([]);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [code, setCode] = useState("");
@@ -82,46 +84,50 @@ export function AdminVouchersPage() {
           </div>
 
           <div className="premium-form-grid">
-            <Input
-              label="Voucher Code"
-              placeholder="e.g. SAVE20"
-              value={code}
-              onValueChange={(v) => setCode(v.toUpperCase())}
-              radius="lg"
-              classNames={{ inputWrapper: "premium-input" }}
-            />
-            <Input
-              label="Discount (%)"
-              type="number"
-              min={1}
-              max={100}
-              step={0.01}
-              placeholder="e.g. 20"
-              value={discountPercent}
-              onValueChange={setDiscountPercent}
-              radius="lg"
-              classNames={{ inputWrapper: "premium-input" }}
-            />
-            <Input
-              label="Expiry Date (optional)"
-              type="date"
-              value={expiryDate}
-              onValueChange={setExpiryDate}
-              radius="lg"
-              classNames={{ inputWrapper: "premium-input" }}
-            />
-            <Input
-              label="Usage Limit (optional)"
-              type="number"
-              placeholder="Empty = unlimited"
-              value={usageLimit}
-              onValueChange={setUsageLimit}
-              radius="lg"
-              classNames={{ inputWrapper: "premium-input" }}
-            />
+            <div className="premium-admin-field">
+              <label className="premium-field-label">Voucher Code</label>
+              <input
+                className="admin-input"
+                placeholder="e.g. SAVE20"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+              />
+            </div>
+            <div className="premium-admin-field">
+              <label className="premium-field-label">Discount (%)</label>
+              <input
+                className="admin-input"
+                type="number"
+                min={1}
+                max={100}
+                step={0.01}
+                placeholder="e.g. 20"
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+              />
+            </div>
+            <div className="premium-admin-field">
+              <label className="premium-field-label">Expiry Date (optional)</label>
+              <input
+                className="admin-input"
+                type="date"
+                value={expiryDate}
+                onChange={(e) => setExpiryDate(e.target.value)}
+              />
+            </div>
+            <div className="premium-admin-field">
+              <label className="premium-field-label">Usage Limit (optional)</label>
+              <input
+                className="admin-input"
+                type="number"
+                placeholder="Empty = unlimited"
+                value={usageLimit}
+                onChange={(e) => setUsageLimit(e.target.value)}
+              />
+            </div>
           </div>
 
-          <Button color="danger" radius="full" onPress={onCreate} startContent={<Plus size={14} />}>
+          <Button color="danger" radius="full" className="w-full font-bold sm:w-auto sm:min-w-[220px]" onPress={onCreate} startContent={<Plus size={14} />}>
             Create Voucher
           </Button>
         </CardBody>
@@ -133,13 +139,13 @@ export function AdminVouchersPage() {
             <table className="premium-data-table">
               <thead>
                 <tr>
-                  <th>Code</th>
-                  <th>Discount</th>
-                  <th>Used</th>
-                  <th>Limit</th>
-                  <th>Expiry</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th className="w-[160px]">Code</th>
+                  <th className="w-[120px]">Discount</th>
+                  <th className="w-[90px]">Used</th>
+                  <th className="w-[110px]">Limit</th>
+                  <th className="w-[130px]">Expiry</th>
+                  <th className="w-[120px]">Status</th>
+                  <th className="w-[150px]">Action</th>
                 </tr>
               </thead>
               <tbody>
