@@ -272,7 +272,7 @@ export function AdminProductsPage() {
                     <td className="max-w-xs truncate">{product.shortDescription}</td>
                     <td>৳{product.price}</td>
                     <td className="whitespace-nowrap">
-                      <Chip size="sm" variant="flat" color={product.isActive ? "success" : "danger"}>
+                      <Chip size="sm" variant="flat" color={product.isActive ? "success" : "danger"} className="premium-badge">
                         {product.isActive ? "Active" : "Inactive"}
                       </Chip>
                     </td>

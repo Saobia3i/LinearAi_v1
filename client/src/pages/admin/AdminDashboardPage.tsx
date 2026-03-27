@@ -71,10 +71,10 @@ export function AdminDashboardPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-bold text-[var(--theme-text)]">{item.userName}</span>
                 <span className="text-xs text-[var(--theme-muted)]">{item.userEmail}</span>
-                <Chip size="sm" variant="flat" color={item.type === "contact" ? "warning" : "primary"}>
+                <Chip size="sm" variant="flat" color={item.type === "contact" ? "warning" : "primary"} className="premium-badge">
                   {item.type === "contact" ? "Contact" : "Feedback"}
                 </Chip>
-                {item.isPosted && <Chip size="sm" variant="flat" color="success">Posted</Chip>}
+                {item.isPosted && <Chip size="sm" variant="flat" color="success" className="premium-badge">Posted</Chip>}
               </div>
               {item.subject && <p className="text-xs font-semibold text-[var(--theme-muted)]">Subject: {item.subject}</p>}
               <p className="break-words text-sm text-[var(--theme-text)]">{item.message}</p>

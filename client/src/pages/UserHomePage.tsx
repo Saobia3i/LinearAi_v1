@@ -208,6 +208,7 @@ export function UserHomePage() {
               <Chip
                 size="sm"
                 variant="flat"
+                className="premium-badge"
                 style={{
                   background: `color-mix(in srgb, ${slide.accent} 15%, transparent)`,
                   color: slide.accent,
@@ -326,7 +327,7 @@ export function UserHomePage() {
                 <div className="relative flex h-full flex-col gap-5 p-6 sm:grid sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center">
                   {/* Left */}
                   <div className="flex-1 space-y-3">
-                    <Chip size="sm" variant="flat" className="premium-chip-red">Featured</Chip>
+                    <Chip size="sm" variant="flat" className="premium-badge premium-chip-red">Featured</Chip>
                     <h3 className="text-2xl font-black text-[var(--theme-text)]">{banner.title}</h3>
                     <p className="premium-card-desc max-w-md">{banner.shortDescription}</p>
 

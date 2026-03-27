@@ -84,7 +84,7 @@ export function AccountPage() {
                 <p className="mt-1 text-sm text-[var(--theme-muted)]">{account.email}</p>
               </div>
             </div>
-            <Chip size="sm" variant="flat" color={account.isActive ? "success" : "danger"}>
+            <Chip size="sm" variant="flat" color={account.isActive ? "success" : "danger"} className="premium-badge">
               {account.isActive ? "Active" : "Inactive"}
             </Chip>
           </div>

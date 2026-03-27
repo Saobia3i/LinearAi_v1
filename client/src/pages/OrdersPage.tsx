@@ -60,7 +60,7 @@ export function OrdersPage() {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Chip size="sm" variant="flat" color={statusColor(order.paymentStatus)}>
+                  <Chip size="sm" variant="flat" color={statusColor(order.paymentStatus)} className="premium-badge">
                     {order.paymentStatus}
                   </Chip>
                 </TableCell>
@@ -89,7 +89,7 @@ export function OrdersPage() {
             {/* Top row: id + status */}
             <div className="order-card-top">
               <span className="order-card-id">Order #{order.id}</span>
-              <Chip size="sm" variant="flat" color={statusColor(order.paymentStatus)}>
+              <Chip size="sm" variant="flat" color={statusColor(order.paymentStatus)} className="premium-badge">
                 {order.paymentStatus}
               </Chip>
             </div>

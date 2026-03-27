@@ -193,7 +193,7 @@ export function AdminVouchersPage() {
                         : "No expiry"}
                     </td>
                     <td>
-                      <Chip size="sm" variant="flat" color={voucher.isActive ? "success" : "danger"}>
+                      <Chip size="sm" variant="flat" color={voucher.isActive ? "success" : "danger"} className="premium-badge">
                         {voucher.isActive ? "Active" : "Inactive"}
                       </Chip>
                     </td>
