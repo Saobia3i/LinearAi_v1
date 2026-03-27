@@ -129,7 +129,7 @@ export function ProductsPage() {
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-3">
                       <h3 className="premium-card-title text-lg font-bold" style={{ color: 'var(--theme-text)' }}>{product.title}</h3>
-                      <Chip size="sm" variant="flat" color="danger" className="shrink-0">
+                      <Chip size="sm" variant="flat" color="danger" className="premium-badge shrink-0">
                         Base
                       </Chip>
                     </div>

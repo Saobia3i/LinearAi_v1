@@ -373,6 +373,8 @@ textarea {
   white-space: nowrap;
   line-height: 1.15;
   font-weight: 600;
+  vertical-align: middle;
+  text-wrap: nowrap;
 }
 
 .premium-button > * {
@@ -384,11 +386,31 @@ textarea {
 }
 
 .premium-button-with-content {
+  min-height: clamp(2.9rem, 5vw, 3.35rem);
   padding-inline: clamp(0.95rem, 2vw, 1.35rem);
+  padding-block: clamp(0.72rem, 1vw, 0.9rem);
+  font-size: clamp(0.92rem, 0.86rem + 0.22vw, 1rem);
 }
 
 .premium-button-icon-only {
-  min-width: 2.5rem;
+  min-width: clamp(2.7rem, 4vw, 3rem);
+  min-height: clamp(2.7rem, 4vw, 3rem);
+  padding: 0;
+}
+
+@media (max-width: 1024px) {
+  .premium-button-with-content {
+    min-height: 3.05rem;
+    padding-inline: 1.1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .premium-button-with-content {
+    min-height: 3.15rem;
+    padding-inline: 1rem;
+    font-size: 0.95rem;
+  }
 }
 
 .premium-user-name {
@@ -742,6 +764,40 @@ select.admin-input {
   @apply rounded-full px-3 py-1 text-xs font-medium uppercase tracking-[0.18em];
 }
 
+.premium-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 2rem;
+  padding-inline: 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.premium-badge[data-slot="base"] {
+  width: fit-content;
+  align-self: flex-start;
+}
+
+.premium-badge [data-slot="content"] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .premium-badge {
+    min-height: 2.1rem;
+    padding-inline: 0.8rem;
+    font-size: 0.78rem;
+  }
+}
+
 .premium-chip-red {
   color: #fff;
   background: linear-gradient(135deg, var(--theme-red), var(--theme-red-strong));
@@ -856,6 +912,7 @@ select.admin-input {
 
 .home-feature-cta {
   @apply mt-auto w-full justify-center text-sm font-medium;
+  min-height: 3.1rem;
 }
 
 .premium-metric-card {
@@ -981,6 +1038,7 @@ select.admin-input {
 
 .product-cart-btn {
   @apply w-full justify-center text-base font-medium;
+  min-height: 3.2rem;
 }
 
 .premium-pagination-wrap {
@@ -1062,6 +1120,20 @@ select.admin-input {
 
 .admin-action-btn:hover {
   transform: translateY(-1px);
+}
+
+.admin-order-action-btn {
+  min-width: 11.75rem;
+  min-height: 3.15rem;
+  justify-content: center;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .admin-order-action-btn {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .admin-action-edit {

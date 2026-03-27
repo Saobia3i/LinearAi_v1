@@ -117,7 +117,7 @@ export function AdminOrdersPage() {
                     size="sm"
                     variant="flat"
                     color={statusColor(order.paymentStatus)}
-                    className={statusClassName(order.paymentStatus)}
+                    className={`premium-badge ${statusClassName(order.paymentStatus)}`}
                   >
                     {order.paymentStatus}
                   </Chip>
@@ -125,12 +125,12 @@ export function AdminOrdersPage() {
                 <TableCell>
                   <div className="flex flex-wrap gap-2">
                     {order.paymentStatus !== "Paid" && (
-                      <Button size="sm" radius="full" variant="solid" className="bg-green-600 text-white font-semibold" onPress={() => onMark(order.id, "Paid")}>
+                      <Button size="sm" radius="full" variant="solid" className="admin-order-action-btn bg-yellow-500 text-black font-semibold" onPress={() => onMark(order.id, "Paid")}>
                         Mark Paid
                       </Button>
                     )}
                     {order.paymentStatus !== "Pending" && (
-                      <Button size="sm" radius="full" variant="solid" className="bg-yellow-500 text-black font-semibold" onPress={() => onMark(order.id, "Pending")}>
+                      <Button size="sm" radius="full" variant="solid" className="admin-order-action-btn bg-green-600 text-white font-semibold" onPress={() => onMark(order.id, "Pending")}>
                         Mark Pending
                       </Button>
                     )}
@@ -152,7 +152,7 @@ export function AdminOrdersPage() {
             {/* Top row: id + status */}
             <div className="order-card-top">
               <span className="order-card-id">Order #{order.id}</span>
-              <Chip size="sm" variant="flat" color={statusColor(order.paymentStatus)} className={statusClassName(order.paymentStatus)}>
+              <Chip size="sm" variant="flat" color={statusColor(order.paymentStatus)} className={`premium-badge ${statusClassName(order.paymentStatus)}`}>
                 {order.paymentStatus}
               </Chip>
             </div>
@@ -182,12 +182,12 @@ export function AdminOrdersPage() {
             {/* Actions */}
             <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[var(--theme-border)]">
               {order.paymentStatus !== "Paid" && (
-                <Button size="sm" radius="full" variant="solid" className="bg-green-600 text-white font-semibold" onPress={() => onMark(order.id, "Paid")}>
+                <Button size="sm" radius="full" variant="solid" className="admin-order-action-btn bg-yellow-500 text-black font-semibold" onPress={() => onMark(order.id, "Paid")}>
                   Mark Paid
                 </Button>
               )}
               {order.paymentStatus !== "Pending" && (
-                <Button size="sm" radius="full" variant="solid" className="bg-yellow-500 text-black font-semibold" onPress={() => onMark(order.id, "Pending")}>
+                <Button size="sm" radius="full" variant="solid" className="admin-order-action-btn bg-green-600 text-white font-semibold" onPress={() => onMark(order.id, "Pending")}>
                   Mark Pending
                 </Button>
               )}
