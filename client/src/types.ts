@@ -106,6 +106,24 @@ export type AuthUser = {
   role: string;
 };
 
+export type FeedbackItem = {
+  id: number;
+  message: string;
+  type: string;
+  subject?: string;
+  isPosted: boolean;
+  createdAt: string;
+  userName: string;
+  userEmail?: string;
+};
+
+export type PublicReview = {
+  id: number;
+  message: string;
+  createdAt: string;
+  userName: string;
+};
+
 export type ApiResponse<T> = {
   success: boolean;
   message?: string;

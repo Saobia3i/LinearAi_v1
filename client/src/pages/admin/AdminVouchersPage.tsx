@@ -11,6 +11,8 @@ export function AdminVouchersPage() {
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [code, setCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState("");
+  const [minimumOrderAmount, setMinimumOrderAmount] = useState("");
+  const [maxDiscountAmount, setMaxDiscountAmount] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [usageLimit, setUsageLimit] = useState("");
   const [page, setPage] = useState(1);
@@ -33,14 +35,16 @@ export function AdminVouchersPage() {
       await createAdminVoucher({
         code: code.toUpperCase(),
         discountPercent: Number(discountPercent),
+        maxDiscountAmount: maxDiscountAmount ? Number(maxDiscountAmount) : 0,
+        minimumOrderAmount: minimumOrderAmount ? Number(minimumOrderAmount) : 0,
         maxUses: usageLimit ? Number(usageLimit) : 0,
         expiryDate: expiryDate || undefined,
-        description: "",
-        maxDiscountAmount: 0,
-        minimumOrderAmount: 0
+        description: ""
       });
       setCode("");
       setDiscountPercent("");
+      setMinimumOrderAmount("");
+      setMaxDiscountAmount("");
       setExpiryDate("");
       setUsageLimit("");
       setMessage({ text: "Voucher created.", type: "success" });
@@ -113,6 +117,30 @@ export function AdminVouchersPage() {
                 type="date"
                 value={expiryDate}
                 onChange={(e) => setExpiryDate(e.target.value)}
+              />
+            </div>
+            <div className="premium-admin-field">
+              <label className="premium-field-label">Minimum Order (optional)</label>
+              <input
+                className="admin-input"
+                type="number"
+                min={0}
+                step={0.01}
+                placeholder="Empty = no minimum"
+                value={minimumOrderAmount}
+                onChange={(e) => setMinimumOrderAmount(e.target.value)}
+              />
+            </div>
+            <div className="premium-admin-field">
+              <label className="premium-field-label">Max Discount (optional)</label>
+              <input
+                className="admin-input"
+                type="number"
+                min={0}
+                step={0.01}
+                placeholder="Empty = unlimited"
+                value={maxDiscountAmount}
+                onChange={(e) => setMaxDiscountAmount(e.target.value)}
               />
             </div>
             <div className="premium-admin-field">

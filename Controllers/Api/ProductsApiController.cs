@@ -22,16 +22,30 @@ namespace Linear_v1.Controllers.Api
         {
             var products = await _db.Products
                 .Where(p => p.IsActive)
-                .Select(p => new
-                {
-                    p.Id,
-                    p.Title,
-                    p.ShortDescription,
-                    p.Price
-                })
+                .Include(p => p.Subscriptions.Where(s => s.IsActive))
+                .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
-            return Ok(new { success = true, data = products });
+            var data = products.Select(p => new
+            {
+                p.Id,
+                p.Title,
+                p.ShortDescription,
+                p.Price,
+                subscriptions = p.Subscriptions
+                    .Where(s => s.IsActive)
+                    .OrderBy(s => s.DurationMonths)
+                    .Select(s => new
+                    {
+                        s.Id,
+                        s.DurationMonths,
+                        s.Price,
+                        s.DiscountPercent,
+                        finalPrice = s.FinalPrice
+                    })
+            });
+
+            return Ok(new { success = true, data });
         }
 
         // GET: api/products/5

@@ -1,9 +1,11 @@
 import { Card, CardBody, Chip } from "@heroui/react";
-import { ArrowRight, ShoppingCart, Zap } from "lucide-react";
+import { ArrowRight, Quote, ShoppingCart, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { addToCart, api, getErrorMessage } from "../api";
+import { addToCart, api, getErrorMessage, getProducts, getPublicReviews } from "../api";
 import { AppButton as Button } from "../components/ui/AppButton";
+import { useAuth } from "../context/AuthContext";
+import type { PublicReview } from "../types";
 
 type HomeData = {
   user: { id: string; fullName: string; email: string };
@@ -54,6 +56,7 @@ const HERO_SLIDES = [
 ];
 
 export function UserHomePage() {
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [cartMsg, setCartMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
@@ -66,7 +69,32 @@ export function UserHomePage() {
   const heroTransitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
 
+  const [reviews, setReviews] = useState<PublicReview[]>([]);
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const reviewTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      // Guest: load public products to show on home page
+      getProducts()
+        .then((res) => {
+          const defaults: Record<number, number> = {};
+          res.data.forEach((p) => {
+            if (p.subscriptions.length > 0) defaults[p.id] = p.subscriptions[0].durationMonths;
+          });
+          setData({
+            user: { id: "", fullName: "", email: "" },
+            cartCount: 0,
+            latestProducts: res.data,
+            featuredProducts: res.data.slice(0, 4),
+          });
+          setSelectedPlans(defaults);
+        })
+        .catch(() => setData(null))
+        .finally(() => setLoading(false));
+      return;
+    }
     api
       .get<{ success: boolean; data: HomeData }>("api/user/home")
       .then((res) => {
@@ -79,7 +107,21 @@ export function UserHomePage() {
       })
       .catch(() => setData(null))
       .finally(() => setLoading(false));
+  }, [user, authLoading]);
+
+  // Fetch public reviews
+  useEffect(() => {
+    getPublicReviews().then((res) => setReviews(res.data)).catch(() => setReviews([]));
   }, []);
+
+  // Reviews auto-advance
+  useEffect(() => {
+    if (reviews.length <= 1) return;
+    reviewTimer.current = setInterval(() => {
+      setReviewIndex((i) => (i + 1) % reviews.length);
+    }, 4000);
+    return () => { if (reviewTimer.current) clearInterval(reviewTimer.current); };
+  }, [reviews]);
 
   // Hero slide auto-advance
   useEffect(() => {
@@ -122,6 +164,10 @@ export function UserHomePage() {
   };
 
   const onAdd = async (productId: number, durationMonths: number) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     setCartMsg(null);
     try {
       const res = await addToCart(productId, durationMonths);
@@ -131,11 +177,10 @@ export function UserHomePage() {
     }
   };
 
-  if (loading) return <p className="section-subtitle">Loading...</p>;
-  if (!data) return <p className="section-subtitle">Failed to load dashboard.</p>;
+  if (loading || authLoading) return <p className="section-subtitle">Loading...</p>;
 
   const slide = HERO_SLIDES[heroIndex];
-  const featured = data.featuredProducts;
+  const featured = data?.featuredProducts ?? [];
   const banner = featured[bannerIndex];
 
   return (
@@ -218,7 +263,7 @@ export function UserHomePage() {
       </Card>
 
       {/* ── VOUCHER STRIP ── */}
-      {data.featuredVoucherCode && (
+      {data?.featuredVoucherCode && (
         <div
           className="flex items-center justify-between gap-3 rounded-2xl border px-5 py-3"
           style={{
@@ -228,8 +273,8 @@ export function UserHomePage() {
         >
           <p className="text-sm font-medium text-[var(--theme-text)]">
             🎟 Use{" "}
-            <span className="font-mono font-bold" style={{ color: 'var(--theme-green)', fontWeight: 700 }}>{data.featuredVoucherCode}</span>
-            {data.maxVoucherDiscountPercent
+            <span className="font-mono font-bold" style={{ color: 'var(--theme-green)', fontWeight: 700 }}>{data?.featuredVoucherCode}</span>
+            {data?.maxVoucherDiscountPercent
               ? <span style={{ color: 'var(--theme-green)', fontWeight: 700 }}> — save up to {data.maxVoucherDiscountPercent}%</span>
               : " at checkout"}
           </p>
@@ -371,6 +416,76 @@ export function UserHomePage() {
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* ── REVIEWS CAROUSEL ── */}
+      {reviews.length > 0 && (
+        <div className="space-y-4">
+          <div className="premium-section-head">
+            <div>
+              <p className="premium-kicker">Testimonials</p>
+              <h2 className="section-title">What People Say About Us</h2>
+            </div>
+          </div>
+
+          <div className="reviews-carousel-wrap">
+            {/* Track — slides 3 at a time on desktop, 1 on mobile */}
+            <div className="reviews-carousel-track">
+              {reviews.map((review, i) => {
+                const total = reviews.length;
+                const offset = ((i - reviewIndex + total) % total);
+                const visible = offset < 3;
+                return (
+                  <div
+                    key={review.id}
+                    className="reviews-carousel-card"
+                    style={{
+                      transform: `translateX(calc(${offset * 100}% + ${offset * 1.5}rem))`,
+                      opacity: visible ? 1 : 0,
+                      pointerEvents: visible ? "auto" : "none",
+                      transition: "transform 0.6s cubic-bezier(0.23,1,0.32,1), opacity 0.4s ease",
+                    }}
+                  >
+                    <Quote size={22} style={{ color: "var(--theme-red)", opacity: 0.7, marginBottom: "0.75rem" }} />
+                    <p className="text-sm leading-relaxed text-[var(--theme-text)] flex-1">{review.message}</p>
+                    <div className="mt-4 flex items-center gap-2">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--theme-blue)]/15 text-xs font-black text-[var(--theme-blue)]">
+                        {review.userName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-[var(--theme-text)]">{review.userName}</p>
+                        <p className="text-[10px] text-[var(--theme-muted)]">
+                          {new Date(review.createdAt).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Dots */}
+            {reviews.length > 1 && (
+              <div className="mt-6 flex items-center justify-center gap-2">
+                {reviews.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      if (reviewTimer.current) clearInterval(reviewTimer.current);
+                      setReviewIndex(i);
+                    }}
+                    className="rounded-full transition-all duration-300"
+                    style={{
+                      width: i === reviewIndex ? "24px" : "7px",
+                      height: "7px",
+                      background: i === reviewIndex ? "var(--theme-red)" : "var(--theme-border)",
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </section>

@@ -1,17 +1,24 @@
 import { Card, CardBody, Chip, Pagination } from "@heroui/react";
 import { Package, ShoppingCart } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { addToCart, getErrorMessage, getProducts } from "../api";
 import { AppButton as Button } from "../components/ui/AppButton";
+import { useAuth } from "../context/AuthContext";
+import { getProductFilterCategories, matchesProductCategory } from "../productCategories";
 import type { Product } from "../types";
 
 export function ProductsPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedPlans, setSelectedPlans] = useState<Record<number, number>>({});
   const [msg, setMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
   const pageSize = 6;
 
   useEffect(() => {
@@ -30,6 +37,10 @@ export function ProductsPage() {
   }, []);
 
   const onAdd = async (productId: number) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     const durationMonths = selectedPlans[productId];
     if (!durationMonths) return;
 
@@ -45,8 +56,21 @@ export function ProductsPage() {
   if (loading) return <p className="section-subtitle">Loading products...</p>;
   if (loadError) return <p className="section-subtitle">{loadError}</p>;
 
-  const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
-  const visibleProducts = products.slice((page - 1) * pageSize, page * pageSize);
+  const categoryOptions = getProductFilterCategories(products);
+  const filteredProducts = products.filter((product) => {
+    const searchText = search.trim().toLowerCase();
+    const matchesSearch =
+      searchText.length === 0 ||
+      product.title.toLowerCase().includes(searchText) ||
+      product.shortDescription.toLowerCase().includes(searchText);
+
+    const matchesCategory = matchesProductCategory(product, categoryFilter);
+
+    return matchesSearch && matchesCategory;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+  const visibleProducts = filteredProducts.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <section className="premium-section px-2 sm:px-4 md:px-8 max-w-7xl mx-auto">
@@ -61,6 +85,33 @@ export function ProductsPage() {
       </div>
 
       {msg && <p className={`text-sm ${msg.type === "success" ? "premium-success" : "premium-danger"}`}>{msg.text}</p>}
+
+      <div className="premium-filter-bar">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          placeholder="Search products"
+          className="admin-input premium-filter-input"
+        />
+        <select
+          value={categoryFilter}
+          onChange={(e) => {
+            setCategoryFilter(e.target.value);
+            setPage(1);
+          }}
+          className="admin-input premium-filter-select"
+        >
+          {categoryOptions.map((category) => (
+            <option key={category} value={category}>
+              {category === "All" ? "All Plans" : category}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
         {visibleProducts.map((product) => {
@@ -171,7 +222,7 @@ export function ProductsPage() {
         })}
       </div>
 
-      {products.length > pageSize && (
+      {filteredProducts.length > pageSize && (
         <div className="premium-pagination-wrap mt-8 flex justify-center">
           <Pagination page={page} total={totalPages} onChange={setPage} radius="full" color="danger" showControls />
         </div>

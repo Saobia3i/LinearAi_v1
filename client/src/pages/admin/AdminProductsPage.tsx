@@ -16,6 +16,7 @@ import {
   updateAdminProduct
 } from "../../api";
 import { AppButton as Button } from "../../components/ui/AppButton";
+import { getProductFilterCategories, matchesProductCategory } from "../../productCategories";
 import type { Product } from "../../types";
 
 export function AdminProductsPage() {
@@ -35,6 +36,8 @@ export function AdminProductsPage() {
   const [subPrice, setSubPrice] = useState("");
   const [subDiscount, setSubDiscount] = useState("0");
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
   const pageSize = 6;
   const managePanelRef = useRef<HTMLDivElement | null>(null);
   const editPanelRef = useRef<HTMLDivElement | null>(null);
@@ -159,8 +162,21 @@ export function AdminProductsPage() {
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
-  const visibleProducts = products.slice((page - 1) * pageSize, page * pageSize);
+  const categoryOptions = getProductFilterCategories(products);
+  const filteredProducts = products.filter((product) => {
+    const searchText = search.trim().toLowerCase();
+    const matchesSearch =
+      searchText.length === 0 ||
+      product.title.toLowerCase().includes(searchText) ||
+      product.shortDescription.toLowerCase().includes(searchText);
+
+    const matchesCategory = matchesProductCategory(product, categoryFilter);
+
+    return matchesSearch && matchesCategory;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+  const visibleProducts = filteredProducts.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <section className="premium-section">
@@ -176,6 +192,33 @@ export function AdminProductsPage() {
           {message.text}
         </p>
       )}
+
+      <div className="premium-filter-bar">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          placeholder="Search products"
+          className="admin-input premium-filter-input"
+        />
+        <select
+          value={categoryFilter}
+          onChange={(e) => {
+            setCategoryFilter(e.target.value);
+            setPage(1);
+          }}
+          className="admin-input premium-filter-select"
+        >
+          {categoryOptions.map((category) => (
+            <option key={category} value={category}>
+              {category === "All" ? "All Plans" : category}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Add Product */}
       <Card className="premium-card">
@@ -259,7 +302,7 @@ export function AdminProductsPage() {
                     </td>
                   </tr>
                 ))}
-                {products.length === 0 && (
+                {filteredProducts.length === 0 && (
                   <tr>
                     <td colSpan={6} className="text-center text-[var(--theme-muted)]">No products found.</td>
                   </tr>
@@ -270,7 +313,7 @@ export function AdminProductsPage() {
         </CardBody>
       </Card>
 
-      {products.length > pageSize && (
+      {filteredProducts.length > pageSize && (
         <div className="premium-pagination-wrap">
           <Pagination page={page} total={totalPages} onChange={setPage} radius="full" color="danger" showControls />
         </div>
