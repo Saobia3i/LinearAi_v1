@@ -64,12 +64,23 @@ namespace Linear_v1.Controllers.Api
             var confirmLink = Url.Action("ConfirmEmail", "Account",
                 new { userId = user.Id, token }, Request.Scheme)!;
 
-            await _emailService.SendEmailConfirmationAsync(user.Email, user.FullName, confirmLink);
+            string message;
+            try
+            {
+                await _emailService.SendEmailConfirmationAsync(user.Email, user.FullName, confirmLink);
+                message = "Registration successful. Please check your email to confirm your account.";
+            }
+            catch (Exception ex)
+            {
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthApiController>>();
+                logger.LogError(ex, "Failed to send confirmation email to {Email}", user.Email);
+                message = $"Registration successful, but we could not send the confirmation email. Please contact support or use this link to confirm: {confirmLink}";
+            }
 
             return Ok(new
             {
                 success = true,
-                message = "Registration successful. Please check your email to confirm your account.",
+                message,
                 email = user.Email
             });
         }
