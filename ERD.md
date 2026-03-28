@@ -1,19 +1,16 @@
-# Linear AI ERD
-
-This ERD reflects the current Entity Framework Core model in the app.
-
-## Mermaid ERD
+# Entity Relationship Diagram — LinearAI
 
 ```mermaid
 erDiagram
     ApplicationUser {
         string Id PK
-        string UserName
-        string Email
-        string PhoneNumber
         string FullName
-        datetime CreatedAt
+        string Email
+        string UserName
+        string PasswordHash
+        bool EmailConfirmed
         bool IsActive
+        datetime CreatedAt
     }
 
     Product {
@@ -22,6 +19,7 @@ erDiagram
         string ShortDescription
         decimal Price
         bool IsActive
+        string DeliveryTemplate
         datetime CreatedAt
     }
 
@@ -34,6 +32,27 @@ erDiagram
         bool IsActive
     }
 
+    Order {
+        int Id PK
+        string UserId FK
+        int ProductId FK
+        int VoucherId FK
+        int Quantity
+        decimal UnitPrice
+        decimal TotalAmount
+        decimal DiscountAmount
+        decimal FinalAmount
+        decimal OriginalPrice
+        decimal FinalPrice
+        string VoucherCode
+        int DurationMonths
+        datetime SubscriptionEndDate
+        string PaymentStatus
+        datetime OrderDate
+        string DeliveryNote
+        bool IsDelivered
+    }
+
     Voucher {
         int Id PK
         string Code
@@ -41,76 +60,58 @@ erDiagram
         decimal DiscountPercent
         decimal MaxDiscountAmount
         decimal MinimumOrderAmount
-        datetime ExpiryDate
         int UsageLimit
         int UsedCount
         bool IsActive
+        datetime ExpiryDate
         datetime CreatedAt
     }
 
     Feedback {
         int Id PK
+        string UserId FK
         string Message
         string Type
         string Subject
-        string UserId FK
         bool IsPosted
         datetime CreatedAt
     }
 
-    Order {
-        int Id PK
-        string UserId FK
-        int ProductId FK
-        int Quantity
-        decimal UnitPrice
-        decimal TotalAmount
-        decimal DiscountAmount
-        decimal FinalAmount
-        int VoucherId FK
-        string VoucherCode
-        string PaymentStatus
-        datetime OrderDate
-        int DurationMonths
-        decimal OriginalPrice
-        decimal FinalPrice
-        datetime SubscriptionEndDate
-    }
-
-    ApplicationUser ||--o{ Order : places
-    Product ||--o{ Order : appears_in
-    Product ||--o{ ProductSubscription : has
-    ApplicationUser ||--o{ Feedback : submits
-    Voucher ||--o{ Order : applied_to
+    ApplicationUser ||--o{ Order : "places"
+    ApplicationUser ||--o{ Feedback : "submits"
+    Product ||--o{ ProductSubscription : "has"
+    Product ||--o{ Order : "ordered via"
+    Voucher ||--o{ Order : "applied to"
 ```
 
-## Relationship Notes
+## Relationships
 
-- One `ApplicationUser` can have many `Order` rows.
-- One `ApplicationUser` can have many `Feedback` rows.
-- One `Product` can have many `ProductSubscription` plans.
-- One `Product` can appear in many `Order` rows.
-- One `Voucher` can be referenced by many `Order` rows, but `VoucherId` is optional.
-- `ProductSubscription.FinalPrice` is calculated in code and is not stored in the database.
-- `Voucher.IsValid` is calculated in code and is not stored in the database.
+| From | To | Type | Constraint |
+|------|----|------|------------|
+| `ApplicationUser` | `Order` | One-to-Many | RESTRICT delete — orders are never silently removed |
+| `ApplicationUser` | `Feedback` | One-to-Many | CASCADE delete |
+| `Product` | `ProductSubscription` | One-to-Many | CASCADE delete |
+| `Product` | `Order` | One-to-Many | RESTRICT delete — soft-deactivate instead |
+| `Voucher` | `Order` | One-to-Many | Optional FK — order may have no voucher |
 
-## Identity Tables
+## Notes
 
-Because `ApplicationDbContext` inherits from `IdentityDbContext<ApplicationUser>`, the database also includes standard ASP.NET Identity tables such as:
+- `ProductSubscription.FinalPrice` is a calculated property (`Price - Price * DiscountPercent / 100`) — not stored in the database.
+- `Voucher.IsValid` is a computed property — not stored in the database.
+- `Order.PaymentStatus` stored as enum: `Pending`, `Paid`, `Failed`, `Cancelled`, `Refunded`.
+- All `decimal` fields use precision `(18, 2)`.
+- Deleting a `Product` that has orders performs a **soft delete** (`IsActive = false`) to preserve order history.
+- `Order.DeliveryNote` and `Order.IsDelivered` support the delivery fulfilment workflow.
+- `Product.DeliveryTemplate` is a reusable template that pre-fills the delivery note when an admin delivers an order.
 
-- `AspNetUsers`
+## Identity Tables (ASP.NET Core Identity)
+
+`ApplicationDbContext` inherits from `IdentityDbContext<ApplicationUser>`. Additional tables managed by Identity:
+
+- `AspNetUsers` — maps to `ApplicationUser`
 - `AspNetRoles`
 - `AspNetUserRoles`
 - `AspNetUserClaims`
 - `AspNetUserLogins`
 - `AspNetUserTokens`
 - `AspNetRoleClaims`
-
-## Source
-
-- [ApplicationDbContext.cs](/e:/vs%20code%20projects/linear_frontend/LinearAi_v1/Data/ApplicationDbContext.cs)
-- [ApplicationUser.cs](/e:/vs%20code%20projects/linear_frontend/LinearAi_v1/Models/ApplicationUser.cs)
-- [Product.cs](/e:/vs%20code%20projects/linear_frontend/LinearAi_v1/Models/Product.cs)
-- [Order.cs](/e:/vs%20code%20projects/linear_frontend/LinearAi_v1/Models/Order.cs)
-- [Voucher.cs](/e:/vs%20code%20projects/linear_frontend/LinearAi_v1/Models/Voucher.cs)
-- [Feedback.cs](/e:/vs%20code%20projects/linear_frontend/LinearAi_v1/Models/Feedback.cs)
