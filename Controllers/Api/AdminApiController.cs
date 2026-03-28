@@ -50,11 +50,18 @@ namespace Linear_v1.Controllers.Api
         }
 
         [HttpGet("products")]
-        public async Task<IActionResult> GetProducts()
+        public async Task<IActionResult> GetProducts([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var products = await _db.Products
+            if (page < 1) page = 1;
+            pageSize = Math.Clamp(pageSize, 1, 100);
+
+            var query = _db.Products.OrderByDescending(p => p.CreatedAt);
+            var total = await query.CountAsync();
+
+            var products = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Include(p => p.Subscriptions)
-                .OrderByDescending(p => p.CreatedAt)
                 .Select(p => new
                 {
                     p.Id,
@@ -75,7 +82,12 @@ namespace Linear_v1.Controllers.Api
                 })
                 .ToListAsync();
 
-            return Ok(new { success = true, data = products });
+            return Ok(new
+            {
+                success = true,
+                data = products,
+                pagination = new { page, pageSize, total, totalPages = (int)Math.Ceiling((double)total / pageSize) }
+            });
         }
 
         [HttpPost("products")]

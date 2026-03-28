@@ -105,8 +105,10 @@ export async function getAdminDashboard() {
   return response.data;
 }
 
-export async function getAdminProducts() {
-  const response = await api.get<ApiResponse<Product[]>>("api/admin/products");
+export async function getAdminProducts(page = 1, pageSize = 20) {
+  const response = await api.get<PagedApiResponse<Product[]>>(
+    `api/admin/products?page=${page}&pageSize=${pageSize}`
+  );
   return response.data;
 }
 

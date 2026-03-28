@@ -15,10 +15,12 @@ namespace Linear_v1.Controllers.Api
     public class OrdersApiController : ControllerBase
     {
         private readonly ApplicationDbContext _db;
+        private readonly IConfiguration _config;
 
-        public OrdersApiController(ApplicationDbContext db)
+        public OrdersApiController(ApplicationDbContext db, IConfiguration config)
         {
             _db = db;
+            _config = config;
         }
 
         // GET: api/orders?page=1&pageSize=20
@@ -78,6 +80,39 @@ namespace Linear_v1.Controllers.Api
             });
         }
 
+        // POST: api/orders/payment/callback
+        // Called by a payment gateway after processing. Secured by a shared secret in the header.
+        [HttpPost("payment/callback")]
+        [AllowAnonymous]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
+        public async Task<IActionResult> PaymentCallback([FromBody] PaymentCallbackRequest request)
+        {
+            var expectedSecret = _config["Payment:CallbackSecret"];
+            if (!string.IsNullOrWhiteSpace(expectedSecret))
+            {
+                Request.Headers.TryGetValue("X-Payment-Secret", out var providedSecret);
+                if (providedSecret != expectedSecret)
+                    return Unauthorized(new { success = false, message = "Invalid callback secret." });
+            }
+
+            var order = await _db.Orders.FindAsync(request.OrderId);
+            if (order == null)
+                return NotFound(new { success = false, message = "Order not found." });
+
+            if (order.PaymentStatus != PaymentStatus.Pending)
+                return Ok(new { success = true, message = "Order already processed." });
+
+            order.PaymentStatus = request.Success ? PaymentStatus.Paid : PaymentStatus.Failed;
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = $"Order #{request.OrderId} marked as {order.PaymentStatus}."
+            });
+        }
+
         public record UpdateStatusRequest(string Status);
+        public record PaymentCallbackRequest(int OrderId, bool Success);
     }
 }
