@@ -112,14 +112,14 @@ export async function getAdminProducts(page = 1, pageSize = 20) {
   return response.data;
 }
 
-export async function createAdminProduct(payload: { title: string; shortDescription: string; price: number }) {
+export async function createAdminProduct(payload: { title: string; shortDescription: string; price: number; deliveryTemplate?: string }) {
   const response = await api.post<ApiResponse<unknown>>("api/admin/products", payload);
   return response.data;
 }
 
 export async function updateAdminProduct(
   id: number,
-  payload: { title: string; shortDescription: string; price: number; isActive: boolean }
+  payload: { title: string; shortDescription: string; price: number; isActive: boolean; deliveryTemplate?: string }
 ) {
   const response = await api.put<ApiResponse<unknown>>(`api/admin/products/${id}`, payload);
   return response.data;
@@ -176,6 +176,11 @@ export async function getAdminOrders(page = 1, pageSize = 20) {
 
 export async function updateAdminOrderStatus(id: number, status: string) {
   const response = await api.patch<ApiResponse<unknown>>(`api/orders/${id}/status`, { status });
+  return response.data;
+}
+
+export async function deliverAdminOrder(id: number, deliveryNote: string) {
+  const response = await api.patch<ApiResponse<unknown>>(`api/orders/${id}/deliver`, { deliveryNote });
   return response.data;
 }
 

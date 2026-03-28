@@ -17,4 +17,21 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
   </ItemGroup>
 
+  <Target Name="EnsureReactDistExists" BeforeTargets="Publish">
+    <Error
+      Condition="!Exists('client\dist\index.html') AND '$(DOTNET_RUNNING_IN_CONTAINER)' != 'true'"
+      Text="React frontend is not built. Run 'cd client &amp;&amp; npm run build' before publishing." />
+  </Target>
+
+  <Target Name="CopyReactDistAfterPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <ReactDistFiles Include="client\dist\**\*" />
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(ReactDistFiles)"
+      DestinationFiles="@(ReactDistFiles->'$(PublishDir)%(Identity)')"
+      SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>

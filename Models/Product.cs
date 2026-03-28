@@ -20,6 +20,8 @@ namespace Linear_v1.Models
 
         public bool IsActive { get; set; } = true;
 
+        public string? DeliveryTemplate { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation properties

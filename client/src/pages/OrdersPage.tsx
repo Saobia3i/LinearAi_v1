@@ -40,6 +40,7 @@ export function OrdersPage() {
             <TableColumn>Voucher</TableColumn>
             <TableColumn>Status</TableColumn>
             <TableColumn>Expires</TableColumn>
+            <TableColumn>Delivery</TableColumn>
           </TableHeader>
           <TableBody emptyContent="No orders yet.">
             {orders.map((order) => (
@@ -72,6 +73,13 @@ export function OrdersPage() {
                         year: "2-digit",
                       })
                     : "-"}
+                </TableCell>
+                <TableCell>
+                  {order.isDelivered ? (
+                    <Chip size="sm" variant="flat" color="success" className="premium-badge">Delivered</Chip>
+                  ) : (
+                    <span className="text-[var(--theme-muted)] text-xs">Pending</span>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -132,6 +140,21 @@ export function OrdersPage() {
                 </div>
               )}
             </div>
+
+            {/* Delivery section */}
+            {order.isDelivered && order.deliveryNote && (
+              <div className="mt-3 pt-3 border-t border-[var(--theme-border)]">
+                <p className="text-xs font-semibold text-[var(--theme-green)] mb-1">Delivered</p>
+                <pre className="text-xs text-[var(--theme-muted)] whitespace-pre-wrap break-all bg-[var(--theme-bg)] rounded-lg p-3">
+                  {order.deliveryNote}
+                </pre>
+              </div>
+            )}
+            {!order.isDelivered && order.paymentStatus === "Paid" && (
+              <p className="text-xs text-[var(--theme-muted)] mt-3 pt-3 border-t border-[var(--theme-border)]">
+                Delivery in progress — you will receive an email when your service is ready.
+              </p>
+            )}
           </div>
         ))}
       </div>

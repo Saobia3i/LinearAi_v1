@@ -13,6 +13,7 @@ export type Product = {
   shortDescription: string;
   price: number;
   isActive?: boolean;
+  deliveryTemplate?: string;
   createdAt: string;
   subscriptions: ProductSubscription[];
 };
@@ -54,15 +55,21 @@ export type OrderSummary = {
   orderDate: string;
   subscriptionEndDate?: string;
   voucherCode?: string;
+  isDelivered: boolean;
+  deliveryNote?: string;
 };
 
 export type AdminOrderSummary = {
   id: number;
   clientEmail: string;
+  clientName: string;
   product: string;
+  productDeliveryTemplate?: string;
   price: number;
   paymentStatus: string;
   orderDate: string;
+  isDelivered: boolean;
+  deliveryNote?: string;
 };
 
 export type VoucherSummary = {

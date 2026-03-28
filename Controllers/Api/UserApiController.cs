@@ -342,7 +342,9 @@ namespace Linear_v1.Controllers.Api
                     paymentStatus = o.PaymentStatus.ToString(),
                     o.OrderDate,
                     o.SubscriptionEndDate,
-                    o.VoucherCode
+                    o.VoucherCode,
+                    o.IsDelivered,
+                    o.DeliveryNote
                 })
                 .ToListAsync();
 

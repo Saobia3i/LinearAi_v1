@@ -26,12 +26,14 @@ export function AdminProductsPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newPrice, setNewPrice] = useState("");
+  const [newDeliveryTemplate, setNewDeliveryTemplate] = useState("");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editActive, setEditActive] = useState(true);
+  const [editDeliveryTemplate, setEditDeliveryTemplate] = useState("");
   const [manageProduct, setManageProduct] = useState<Product | null>(null);
   const [subDuration, setSubDuration] = useState("3");
   const [subPrice, setSubPrice] = useState("");
@@ -67,8 +69,8 @@ export function AdminProductsPage() {
   const onCreateProduct = async () => {
     if (!newTitle || !newPrice) return msg("Title and price are required.", "error");
     try {
-      await createAdminProduct({ title: newTitle, shortDescription: newDesc, price: Number(newPrice) });
-      setNewTitle(""); setNewDesc(""); setNewPrice("");
+      await createAdminProduct({ title: newTitle, shortDescription: newDesc, price: Number(newPrice), deliveryTemplate: newDeliveryTemplate || undefined });
+      setNewTitle(""); setNewDesc(""); setNewPrice(""); setNewDeliveryTemplate("");
       msg("Product created.");
       await load(pagination.page);
     } catch (e) {
@@ -83,6 +85,7 @@ export function AdminProductsPage() {
     setEditDesc(product.shortDescription);
     setEditPrice(String(product.price));
     setEditActive(product.isActive ?? true);
+    setEditDeliveryTemplate(product.deliveryTemplate ?? "");
     setIsEditOpen(isOpening);
     if (isOpening) {
       setTimeout(() => {
@@ -98,7 +101,8 @@ export function AdminProductsPage() {
         title: editTitle,
         shortDescription: editDesc,
         price: Number(editPrice),
-        isActive: editActive
+        isActive: editActive,
+        deliveryTemplate: editDeliveryTemplate || undefined
       });
       setIsEditOpen(false);
       msg("Product updated.");
@@ -230,7 +234,7 @@ export function AdminProductsPage() {
             </div>
             <div className="premium-admin-field">
               <label className="premium-field-label">Description</label>
-              <input className="admin-input" placeholder="Short description" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
+              <textarea className="admin-input w-full rounded-xl resize-none text-sm" placeholder="Short description" rows={3} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
             </div>
             <div className="premium-admin-field">
               <label className="premium-field-label">Base Price (৳)</label>
@@ -241,6 +245,35 @@ export function AdminProductsPage() {
                 Add Product
               </Button>
             </div>
+          </div>
+          <div className="premium-admin-field">
+            <label className="premium-field-label">
+              Delivery Template{" "}
+              <span className="text-[var(--theme-muted)] font-normal">(optional — pre-fills the delivery note when you deliver an order)</span>
+            </label>
+            <textarea
+              className="admin-input w-full rounded-xl resize-none text-sm"
+              placeholder="Paste workflow JSON, credentials, setup instructions, or download link here..."
+              rows={6}
+              value={newDeliveryTemplate}
+              onChange={(e) => setNewDeliveryTemplate(e.target.value)}
+            />
+            <label className="mt-2 flex items-center gap-2 cursor-pointer w-fit">
+              <span className="admin-action-btn admin-action-edit text-xs px-3 py-1.5">Upload JSON file</span>
+              <input
+                type="file"
+                accept=".json,.txt,.md"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (ev) => setNewDeliveryTemplate(ev.target?.result as string ?? "");
+                  reader.readAsText(file);
+                  e.target.value = "";
+                }}
+              />
+            </label>
           </div>
         </CardBody>
       </Card>
@@ -418,7 +451,7 @@ export function AdminProductsPage() {
                 </div>
                 <div className="premium-admin-field">
                   <label className="premium-field-label">Short Description</label>
-                  <input className="admin-input" placeholder="Short description" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+                  <textarea className="admin-input w-full rounded-xl resize-none text-sm" placeholder="Short description" rows={3} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
                 </div>
                 <div className="premium-admin-field">
                   <label className="premium-field-label">Price (৳)</label>
@@ -434,6 +467,36 @@ export function AdminProductsPage() {
                   />
                   <label htmlFor="editActive" className="text-sm text-[var(--theme-text)]">Active</label>
                 </div>
+              </div>
+
+              <div className="premium-admin-field">
+                <label className="premium-field-label">
+                  Delivery Template{" "}
+                  <span className="text-[var(--theme-muted)] font-normal">(pre-fills the delivery note when you deliver an order)</span>
+                </label>
+                <textarea
+                  className="admin-input w-full rounded-xl resize-none text-sm"
+                  placeholder="Paste workflow JSON, credentials, setup instructions, or download link here..."
+                  rows={6}
+                  value={editDeliveryTemplate}
+                  onChange={(e) => setEditDeliveryTemplate(e.target.value)}
+                />
+                <label className="mt-2 flex items-center gap-2 cursor-pointer w-fit">
+                  <span className="admin-action-btn admin-action-edit text-xs px-3 py-1.5">Upload JSON file</span>
+                  <input
+                    type="file"
+                    accept=".json,.txt,.md"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => setEditDeliveryTemplate(ev.target?.result as string ?? "");
+                      reader.readAsText(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
               </div>
 
               <div className="flex gap-3">
