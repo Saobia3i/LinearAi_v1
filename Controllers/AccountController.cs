@@ -210,12 +210,6 @@ namespace Linear_v1.Controllers
                     return View(model);
                 }
 
-                if (!user.EmailConfirmed)
-                {
-                    ModelState.AddModelError(string.Empty, "Please verify your email first.");
-                    return View(model);
-                }
-
                 if (!user.IsActive)
                 {
                     ModelState.AddModelError(string.Empty, "Your account has been deactivated.");

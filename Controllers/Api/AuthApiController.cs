@@ -105,9 +105,6 @@ namespace Linear_v1.Controllers.Api
             if (user == null)
                 return Unauthorized(new { success = false, message = "Invalid email or password." });
 
-            if (!user.EmailConfirmed)
-                return Unauthorized(new { success = false, message = "Please confirm your email first." });
-
             if (!user.IsActive)
                 return Unauthorized(new { success = false, message = "Account is deactivated." });
 
