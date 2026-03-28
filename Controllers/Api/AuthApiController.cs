@@ -1,14 +1,17 @@
-﻿using Linear_v1.Models;
+﻿using Linear_v1.Infrastructure;
+using Linear_v1.Models;
 using Linear_v1.Models.ViewModels;
 using Linear_v1.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Linear_v1.Controllers.Api
 {
     [Route("api/auth")]
     [ApiController]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public class AuthApiController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;

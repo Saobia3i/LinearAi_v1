@@ -1,14 +1,18 @@
 using Linear_v1.Data;
+using Linear_v1.Infrastructure;
 using Linear_v1.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace Linear_v1.Controllers.Api
 {
     [ApiController]
     [Route("api/admin")]
     [Authorize(Roles = "Admin")]
+    [EnableRateLimiting(RateLimitPolicies.Admin)]
     public class AdminApiController : ControllerBase
     {
         private readonly ApplicationDbContext _db;
@@ -75,13 +79,9 @@ namespace Linear_v1.Controllers.Api
         }
 
         [HttpPost("products")]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
         public async Task<IActionResult> CreateProduct([FromBody] ProductRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.ShortDescription) || request.Price < 0)
-            {
-                return BadRequest(new { success = false, message = "Invalid product payload." });
-            }
-
             var product = new Product
             {
                 Title = request.Title.Trim(),
@@ -196,10 +196,17 @@ namespace Linear_v1.Controllers.Api
         }
 
         [HttpGet("vouchers")]
-        public async Task<IActionResult> GetVouchers()
+        public async Task<IActionResult> GetVouchers([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var vouchers = await _db.Vouchers
-                .OrderByDescending(v => v.CreatedAt)
+            if (page < 1) page = 1;
+            pageSize = Math.Clamp(pageSize, 1, 100);
+
+            var query = _db.Vouchers.OrderByDescending(v => v.CreatedAt);
+            var total = await query.CountAsync();
+
+            var vouchers = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(v => new
                 {
                     v.Id,
@@ -216,10 +223,16 @@ namespace Linear_v1.Controllers.Api
                 })
                 .ToListAsync();
 
-            return Ok(new { success = true, data = vouchers });
+            return Ok(new
+            {
+                success = true,
+                data = vouchers,
+                pagination = new { page, pageSize, total, totalPages = (int)Math.Ceiling((double)total / pageSize) }
+            });
         }
 
         [HttpPost("vouchers")]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
         public async Task<IActionResult> CreateVoucher([FromBody] VoucherRequest request)
         {
             var code = request.Code?.Trim().ToUpperInvariant();
@@ -272,28 +285,53 @@ namespace Linear_v1.Controllers.Api
 
         public sealed class ProductRequest
         {
+            [Required, StringLength(200, MinimumLength = 2)]
             public string Title { get; set; } = string.Empty;
+
+            [Required, StringLength(1000, MinimumLength = 2)]
             public string ShortDescription { get; set; } = string.Empty;
+
+            [Range(0, 1_000_000)]
             public decimal Price { get; set; }
+
             public bool IsActive { get; set; } = true;
         }
 
         public sealed class SubscriptionRequest
         {
+            [Range(1, 120)]
             public int DurationMonths { get; set; }
+
+            [Range(0, 1_000_000)]
             public decimal Price { get; set; }
+
+            [Range(0, 100)]
             public decimal DiscountPercent { get; set; }
+
             public bool IsActive { get; set; } = true;
         }
 
         public sealed class VoucherRequest
         {
+            [Required, StringLength(50, MinimumLength = 3), RegularExpression(@"^[A-Z0-9_\-]+$",
+                ErrorMessage = "Code may only contain uppercase letters, digits, hyphens, and underscores.")]
             public string Code { get; set; } = string.Empty;
+
+            [StringLength(500)]
             public string Description { get; set; } = string.Empty;
+
+            [Range(1, 100)]
             public decimal DiscountPercent { get; set; }
+
+            [Range(0, 1_000_000)]
             public decimal MaxDiscountAmount { get; set; }
+
+            [Range(0, 1_000_000)]
             public decimal MinimumOrderAmount { get; set; }
+
+            [Range(0, int.MaxValue)]
             public int MaxUses { get; set; }
+
             public DateTime? ExpiryDate { get; set; }
         }
     }

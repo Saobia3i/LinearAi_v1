@@ -1,7 +1,9 @@
 ﻿using Linear_v1.Data;
+using Linear_v1.Infrastructure;
 using Linear_v1.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Linear_v1.Controllers.Api
@@ -9,6 +11,7 @@ namespace Linear_v1.Controllers.Api
     [Route("api/orders")]
     [ApiController]
     [Authorize(Roles = "Admin")]
+    [EnableRateLimiting(RateLimitPolicies.Admin)]
     public class OrdersApiController : ControllerBase
     {
         private readonly ApplicationDbContext _db;
@@ -18,14 +21,23 @@ namespace Linear_v1.Controllers.Api
             _db = db;
         }
 
-        // GET: api/orders
+        // GET: api/orders?page=1&pageSize=20
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var orders = await _db.Orders
+            if (page < 1) page = 1;
+            pageSize = Math.Clamp(pageSize, 1, 100);
+
+            var query = _db.Orders
                 .Include(o => o.User)
                 .Include(o => o.Product)
-                .OrderByDescending(o => o.OrderDate)
+                .OrderByDescending(o => o.OrderDate);
+
+            var total = await query.CountAsync();
+
+            var orders = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(o => new
                 {
                     o.Id,
@@ -37,7 +49,12 @@ namespace Linear_v1.Controllers.Api
                 })
                 .ToListAsync();
 
-            return Ok(new { success = true, data = orders });
+            return Ok(new
+            {
+                success = true,
+                data = orders,
+                pagination = new { page, pageSize, total, totalPages = (int)Math.Ceiling((double)total / pageSize) }
+            });
         }
 
         // PATCH: api/orders/5/status

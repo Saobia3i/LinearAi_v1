@@ -1,14 +1,18 @@
 using Linear_v1.Data;
+using Linear_v1.Infrastructure;
 using Linear_v1.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace Linear_v1.Controllers.Api
 {
     [ApiController]
     [Route("api/feedback")]
+    [EnableRateLimiting(RateLimitPolicies.Api)]
     public class FeedbackApiController : ControllerBase
     {
         private readonly ApplicationDbContext _db;
@@ -23,6 +27,7 @@ namespace Linear_v1.Controllers.Api
         // POST api/feedback — logged-in user submits feedback or contact
         [HttpPost]
         [Authorize]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
         public async Task<IActionResult> Submit([FromBody] SubmitFeedbackRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Message))
@@ -114,6 +119,9 @@ namespace Linear_v1.Controllers.Api
             return Ok(new { success = true, message = feedback.IsPosted ? "Posted to home page." : "Removed from home page.", data = new { isPosted = feedback.IsPosted } });
         }
 
-        public record SubmitFeedbackRequest(string Message, string Type, string? Subject);
+        public record SubmitFeedbackRequest(
+            [Required, StringLength(2000, MinimumLength = 5)] string Message,
+            [Required, RegularExpression("^(feedback|contact)$")] string Type,
+            [StringLength(200)] string? Subject);
     }
 }

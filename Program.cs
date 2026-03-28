@@ -1,4 +1,5 @@
 using Linear_v1.Data;
+using Linear_v1.Infrastructure;
 using Linear_v1.Models;
 using Linear_v1.Services;
 using Microsoft.AspNetCore.Identity;
@@ -73,6 +74,9 @@ builder.Services.ConfigureApplicationCookie(options =>
 // App services
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddControllersWithViews();
+builder.Services.AddApiRateLimiting();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactClient", policy =>
@@ -108,6 +112,8 @@ await InitializeDatabaseAsync(app.Services);
 var reactDistPath = Path.Combine(app.Environment.ContentRootPath, "client", "dist");
 var reactDistExists = Directory.Exists(reactDistPath);
 
+app.UseExceptionHandler();
+app.UseSecurityHeaders();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
@@ -126,6 +132,7 @@ if (reactDistExists)
 
 app.UseRouting();
 app.UseCors("ReactClient");
+app.UseRateLimiter();
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();

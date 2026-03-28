@@ -3,11 +3,12 @@ import { Plus, Ticket } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createAdminVoucher, getAdminVouchers, getErrorMessage, toggleAdminVoucher } from "../../api";
 import { AppButton as Button } from "../../components/ui/AppButton";
-import type { VoucherSummary } from "../../types";
+import type { PaginationMeta, VoucherSummary } from "../../types";
 
 export function AdminVouchersPage() {
 
   const [vouchers, setVouchers] = useState<VoucherSummary[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, pageSize: 20, total: 0, totalPages: 1 });
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [code, setCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState("");
@@ -15,16 +16,15 @@ export function AdminVouchersPage() {
   const [maxDiscountAmount, setMaxDiscountAmount] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [usageLimit, setUsageLimit] = useState("");
-  const [page, setPage] = useState(1);
-  const pageSize = 8;
 
-  const load = async () => {
-    const response = await getAdminVouchers();
+  const load = async (page = 1) => {
+    const response = await getAdminVouchers(page, 20);
     setVouchers(response.data);
+    if (response.pagination) setPagination(response.pagination);
   };
 
   useEffect(() => {
-    load().catch(() => setVouchers([]));
+    load(1).catch(() => setVouchers([]));
   }, []);
 
   const onCreate = async () => {
@@ -48,7 +48,7 @@ export function AdminVouchersPage() {
       setExpiryDate("");
       setUsageLimit("");
       setMessage({ text: "Voucher created.", type: "success" });
-      await load();
+      await load(1);
     } catch (error) {
       setMessage({ text: getErrorMessage(error, "Voucher creation failed"), type: "error" });
     }
@@ -57,14 +57,12 @@ export function AdminVouchersPage() {
   const onToggle = async (id: number) => {
     try {
       await toggleAdminVoucher(id);
-      await load();
+      await load(pagination.page);
     } catch (error) {
       setMessage({ text: getErrorMessage(error, "Voucher update failed"), type: "error" });
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(vouchers.length / pageSize));
-  const visibleVouchers = vouchers.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <section className="premium-section">
@@ -177,7 +175,7 @@ export function AdminVouchersPage() {
                 </tr>
               </thead>
               <tbody>
-                {visibleVouchers.map((voucher) => (
+                {vouchers.map((voucher: VoucherSummary) => (
                   <tr key={voucher.id}>
                     <td className="font-mono font-bold text-[var(--theme-text)]">{voucher.code}</td>
                     <td>{voucher.discountPercent}%</td>
@@ -223,9 +221,16 @@ export function AdminVouchersPage() {
         </CardBody>
       </Card>
 
-      {vouchers.length > pageSize && (
+      {pagination.totalPages > 1 && (
         <div className="premium-pagination-wrap">
-          <Pagination page={page} total={totalPages} onChange={setPage} radius="full" color="danger" showControls />
+          <Pagination
+            page={pagination.page}
+            total={pagination.totalPages}
+            onChange={(p) => load(p)}
+            radius="full"
+            color="danger"
+            showControls
+          />
         </div>
       )}
     </section>

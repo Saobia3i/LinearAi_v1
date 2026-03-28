@@ -129,3 +129,14 @@ export type ApiResponse<T> = {
   message?: string;
   data: T;
 };
+
+export type PaginationMeta = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
+export type PagedApiResponse<T> = ApiResponse<T> & {
+  pagination: PaginationMeta;
+};
