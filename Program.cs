@@ -106,6 +106,13 @@ builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
+// Trust reverse-proxy headers (Render, Railway, etc.) so Request.Scheme = "https"
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+                     | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+});
+
 // Critical startup step: migrate + seed, fail fast if broken
 await InitializeDatabaseAsync(app.Services);
 
