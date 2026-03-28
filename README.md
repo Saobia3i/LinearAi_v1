@@ -107,7 +107,7 @@ All routes in this group require the `Admin` role.
 | Method | Route | Description |
 |--------|-------|-------------|
 | GET | `/dashboard` | Returns platform-wide statistics — total users, total orders, pending orders, total products, active products, total vouchers, active vouchers. |
-| GET | `/products` | Returns all products (active and inactive) with their full subscription plan lists. |
+| GET | `/products?page=1&pageSize=20` | Returns a paginated list of all products (active and inactive) with their full subscription plan lists. |
 | POST | `/products` | Creates a new product. Validated fields: title (2–200 chars), short description (2–1000 chars), price (0–1,000,000). |
 | PUT | `/products/{id}` | Updates an existing product's title, description, price, and active status. |
 | DELETE | `/products/{id}` | If the product has no orders — hard deletes the product and its subscription plans. If orders exist — soft-deactivates the product and all its plans to preserve order history. |
@@ -127,6 +127,7 @@ All routes require the `Admin` role.
 |--------|-------|-------------|
 | GET | `/?page=1&pageSize=20` | Returns a paginated list of all orders across all users, ordered by date descending. Each entry includes client email, product name, price, payment status, and order date. |
 | PATCH | `/{id}/status` | Updates the payment status of an order. Accepted values: `Pending`, `Paid`, `Failed`, `Cancelled`, `Refunded`. |
+| POST | `/payment/callback` | Payment gateway webhook. Marks an order as `Paid` or `Failed` based on gateway result. Secured with a shared secret via `X-Payment-Secret` header. No session auth required — intended for server-to-server calls only. |
 
 ---
 
@@ -163,7 +164,10 @@ Built using ASP.NET Core's built-in `RateLimiter` with fixed-window partitions. 
 | `write` | 30 | 1 minute | User identity / IP | Cart mutations, checkout, feedback submit |
 | `admin` | 300 | 1 minute | User identity | All admin endpoints |
 
-Exceeded limits return `429 Too Many Requests` with a `Retry-After` header indicating when the window resets.
+Exceeded limits return `429 Too Many Requests` with the following headers:
+- `Retry-After` — seconds until the window resets
+- `X-RateLimit-Remaining: 0` — confirms no quota left
+- `X-RateLimit-Retry-After` — same value as `Retry-After`, for client convenience
 
 Auth endpoint rate limiting complements Identity's account lockout — rate limiting slows credential-stuffing scripts at the network level while lockout protects individual accounts at the application level.
 

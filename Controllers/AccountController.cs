@@ -73,7 +73,8 @@ namespace Linear_v1.Controllers
                     FullName = model.FullName,
                     UserName = model.Email,
                     Email = model.Email,
-                    EmailConfirmed = false
+                    EmailConfirmed = false,
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 var result = await _userManager.CreateAsync(user, model.Password);

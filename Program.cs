@@ -257,7 +257,8 @@ static async Task EnsureUserAsync(
         UserName = email,
         Email = email,
         EmailConfirmed = true,
-        IsActive = true
+        IsActive = true,
+        CreatedAt = DateTime.UtcNow
     };
 
     var result = await userManager.CreateAsync(user, password);

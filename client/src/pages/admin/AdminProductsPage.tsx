@@ -17,10 +17,11 @@ import {
 } from "../../api";
 import { AppButton as Button } from "../../components/ui/AppButton";
 import { getProductFilterCategories, matchesProductCategory } from "../../productCategories";
-import type { Product } from "../../types";
+import type { PaginationMeta, Product } from "../../types";
 
 export function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, pageSize: 20, total: 0, totalPages: 1 });
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -35,16 +36,15 @@ export function AdminProductsPage() {
   const [subDuration, setSubDuration] = useState("3");
   const [subPrice, setSubPrice] = useState("");
   const [subDiscount, setSubDiscount] = useState("0");
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
-  const pageSize = 6;
   const managePanelRef = useRef<HTMLDivElement | null>(null);
   const editPanelRef = useRef<HTMLDivElement | null>(null);
 
-  const load = async () => {
-    const res = await getAdminProducts();
+  const load = async (page = 1) => {
+    const res = await getAdminProducts(page, 20);
     setProducts(res.data);
+    if (res.pagination) setPagination(res.pagination);
     setManageProduct((prev) => {
       if (!prev) return null;
       return res.data.find((p) => p.id === prev.id) ?? null;
@@ -52,7 +52,7 @@ export function AdminProductsPage() {
   };
 
   useEffect(() => {
-    load().catch(() => setProducts([]));
+    load(1).catch(() => setProducts([]));
   }, []);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export function AdminProductsPage() {
       await createAdminProduct({ title: newTitle, shortDescription: newDesc, price: Number(newPrice) });
       setNewTitle(""); setNewDesc(""); setNewPrice("");
       msg("Product created.");
-      await load();
+      await load(pagination.page);
     } catch (e) {
       msg(getErrorMessage(e, "Create failed"), "error");
     }
@@ -102,7 +102,7 @@ export function AdminProductsPage() {
       });
       setIsEditOpen(false);
       msg("Product updated.");
-      await load();
+      await load(pagination.page);
     } catch (e) {
       msg(getErrorMessage(e, "Update failed"), "error");
     }
@@ -116,7 +116,7 @@ export function AdminProductsPage() {
         price: product.price,
         isActive: !product.isActive
       });
-      await load();
+      await load(pagination.page);
     } catch (e) {
       msg(getErrorMessage(e, "Update failed"), "error");
     }
@@ -127,7 +127,7 @@ export function AdminProductsPage() {
     try {
       await deleteAdminProduct(id);
       msg("Product deleted.");
-      await load();
+      await load(pagination.page);
     } catch (e) {
       msg(getErrorMessage(e, "Delete failed"), "error");
     }
@@ -146,7 +146,7 @@ export function AdminProductsPage() {
       await saveAdminSubscription(manageProduct.id, payload);
       setSubPrice(""); setSubDiscount("0");
       msg("Subscription plan saved.");
-      await load();
+      await load(pagination.page);
     } catch (e) {
       msg(getErrorMessage(e, "Save failed"), "error");
     }
@@ -156,7 +156,7 @@ export function AdminProductsPage() {
     try {
       await deleteAdminSubscription(id);
       msg("Plan deleted.");
-      await load();
+      await load(pagination.page);
     } catch (e) {
       msg(getErrorMessage(e, "Delete failed"), "error");
     }
@@ -175,8 +175,6 @@ export function AdminProductsPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
-  const visibleProducts = filteredProducts.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <section className="premium-section">
@@ -199,7 +197,6 @@ export function AdminProductsPage() {
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
-            setPage(1);
           }}
           placeholder="Search products"
           className="admin-input premium-filter-input"
@@ -208,7 +205,6 @@ export function AdminProductsPage() {
           value={categoryFilter}
           onChange={(e) => {
             setCategoryFilter(e.target.value);
-            setPage(1);
           }}
           className="admin-input premium-filter-select"
         >
@@ -265,7 +261,7 @@ export function AdminProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {visibleProducts.map((product) => (
+                {filteredProducts.map((product) => (
                   <tr key={product.id}>
                     <td>{product.id}</td>
                     <td className="font-semibold text-[var(--theme-text)]">{product.title}</td>
@@ -313,9 +309,16 @@ export function AdminProductsPage() {
         </CardBody>
       </Card>
 
-      {filteredProducts.length > pageSize && (
+      {pagination.totalPages > 1 && (
         <div className="premium-pagination-wrap">
-          <Pagination page={page} total={totalPages} onChange={setPage} radius="full" color="danger" showControls />
+          <Pagination
+            page={pagination.page}
+            total={pagination.totalPages}
+            onChange={(p) => load(p)}
+            radius="full"
+            color="danger"
+            showControls
+          />
         </div>
       )}
 

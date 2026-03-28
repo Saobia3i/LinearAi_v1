@@ -100,18 +100,21 @@ public static class RateLimitPolicies
                 o.QueueLimit = 0;
             });
 
-            // Emit Retry-After header on 429
+            // Emit Retry-After and X-RateLimit-* headers on 429
             options.OnRejected = async (ctx, _) =>
             {
+                var retrySeconds = "60";
                 if (ctx.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
                 {
-                    ctx.HttpContext.Response.Headers.RetryAfter =
-                        ((int)retryAfter.TotalSeconds).ToString();
+                    retrySeconds = ((int)retryAfter.TotalSeconds).ToString();
+                    ctx.HttpContext.Response.Headers.RetryAfter = retrySeconds;
                 }
 
+                ctx.HttpContext.Response.Headers["X-RateLimit-Remaining"] = "0";
+                ctx.HttpContext.Response.Headers["X-RateLimit-Retry-After"] = retrySeconds;
                 ctx.HttpContext.Response.ContentType = "application/json";
                 await ctx.HttpContext.Response.WriteAsync(
-                    """{"success":false,"message":"Too many requests. Please slow down."}""");
+                    $$$"""{"success":false,"message":"Too many requests. Please try again after {{{retrySeconds}}} seconds."}""");
             };
         });
 

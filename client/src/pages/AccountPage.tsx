@@ -118,7 +118,12 @@ export function AccountPage() {
               <div>
                 <p className="premium-stat-label">Joined</p>
                 <p className="text-sm font-semibold text-[var(--theme-text)]">
-                  {new Date(account.createdAt).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  {(() => {
+                    const d = new Date(account.createdAt);
+                    return isNaN(d.getTime()) || d.getFullYear() < 2000
+                      ? "—"
+                      : d.toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+                  })()}
                 </p>
               </div>
             </div>
