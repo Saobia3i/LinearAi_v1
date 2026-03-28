@@ -62,8 +62,10 @@ namespace Linear_v1.Controllers.Api
 
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             var encodedToken = Uri.EscapeDataString(token);
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var confirmLink = $"{baseUrl}/Account/ConfirmEmail?userId={user.Id}&token={encodedToken}";
+            var config = HttpContext.RequestServices.GetRequiredService<IConfiguration>();
+            var appBaseUrl = config["App:BaseUrl"]?.TrimEnd('/')
+                ?? $"{Request.Scheme}://{Request.Host}";
+            var confirmLink = $"{appBaseUrl}/Account/ConfirmEmail?userId={user.Id}&token={encodedToken}";
 
             string message;
             try
