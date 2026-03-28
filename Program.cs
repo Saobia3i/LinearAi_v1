@@ -113,6 +113,22 @@ var reactDistPath = Path.Combine(app.Environment.ContentRootPath, "client", "dis
 var reactDistExists = Directory.Exists(reactDistPath);
 
 app.UseExceptionHandler();
+app.UseStatusCodePages(async ctx =>
+{
+    var res = ctx.HttpContext.Response;
+    if (ctx.HttpContext.Request.Path.StartsWithSegments("/api") &&
+        res.ContentType?.Contains("application/json") != true)
+    {
+        res.ContentType = "application/json";
+        var message = res.StatusCode switch
+        {
+            401 => "Authentication required.",
+            403 => "Access forbidden. You do not have permission.",
+            _ => "An error occurred."
+        };
+        await res.WriteAsJsonAsync(new { success = false, message });
+    }
+});
 app.UseSecurityHeaders();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -147,6 +163,8 @@ app.MapFallback(async context =>
     if (context.Request.Path.StartsWithSegments("/api"))
     {
         context.Response.StatusCode = StatusCodes.Status404NotFound;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { success = false, message = "The requested resource was not found." });
         return;
     }
 

@@ -1,0 +1,237 @@
+{
+  "info": {
+    "name": "LinearAI — User Panel APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5143" }
+  ],
+  "item": [
+    {
+      "name": "1. AUTH",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Test User\",\n  \"email\": \"testuser@test.com\",\n  \"password\": \"Test@123\",\n  \"confirmPassword\": \"Test@123\"\n}" }
+          }
+        },
+        {
+          "name": "Login (User)",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Login OK', () => pm.response.to.have.status(200));"] } }],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"testuser@test.com\",\n  \"password\": \"Test@123\",\n  \"rememberMe\": false\n}" }
+          }
+        },
+        {
+          "name": "Me (GET current user)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/auth/me"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/auth/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. PUBLIC PRODUCTS (no auth)",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": { "method": "GET", "url": "{{base_url}}/api/products" }
+        },
+        {
+          "name": "Get Product by ID",
+          "request": { "method": "GET", "url": "{{base_url}}/api/products/1" }
+        },
+        {
+          "name": "Get Product by ID — Not Found",
+          "request": { "method": "GET", "url": "{{base_url}}/api/products/99999" }
+        }
+      ]
+    },
+    {
+      "name": "3. USER HOME",
+      "item": [
+        {
+          "name": "Get Home Data",
+          "request": { "method": "GET", "url": "{{base_url}}/api/user/home" }
+        },
+        {
+          "name": "Get User Products",
+          "request": { "method": "GET", "url": "{{base_url}}/api/user/products" }
+        },
+        {
+          "name": "Get User Product by ID",
+          "request": { "method": "GET", "url": "{{base_url}}/api/user/products/1" }
+        }
+      ]
+    },
+    {
+      "name": "4. CART",
+      "item": [
+        {
+          "name": "Get Cart (empty)",
+          "request": { "method": "GET", "url": "{{base_url}}/api/user/cart" }
+        },
+        {
+          "name": "Add to Cart",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/user/cart/items",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": 1,\n  \"durationMonths\": 1\n}" }
+          }
+        },
+        {
+          "name": "Add to Cart — Duplicate (should 409)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/user/cart/items",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": 1,\n  \"durationMonths\": 1\n}" }
+          }
+        },
+        {
+          "name": "Add to Cart — Invalid payload (should 400)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/user/cart/items",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": 0,\n  \"durationMonths\": 0\n}" }
+          }
+        },
+        {
+          "name": "Get Cart (with item)",
+          "request": { "method": "GET", "url": "{{base_url}}/api/user/cart" }
+        },
+        {
+          "name": "Apply Voucher",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/user/cart/voucher",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"voucherCode\": \"TESTCODE\"\n}" }
+          }
+        },
+        {
+          "name": "Get Cart with Voucher Preview (GET)",
+          "request": { "method": "GET", "url": "{{base_url}}/api/user/cart?voucherCode=TESTCODE" }
+        },
+        {
+          "name": "Remove from Cart",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/user/cart/items/1?durationMonths=1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. CHECKOUT",
+      "item": [
+        {
+          "name": "Checkout — Empty Cart (should 400)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/user/checkout",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" }
+          }
+        },
+        {
+          "name": "Add Item then Checkout",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/user/checkout",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"voucherCode\": null\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. ORDERS",
+      "item": [
+        {
+          "name": "Get My Orders",
+          "request": { "method": "GET", "url": "{{base_url}}/api/user/orders" }
+        }
+      ]
+    },
+    {
+      "name": "7. ACCOUNT",
+      "item": [
+        {
+          "name": "Get Account Info",
+          "request": { "method": "GET", "url": "{{base_url}}/api/user/account" }
+        }
+      ]
+    },
+    {
+      "name": "8. FEEDBACK",
+      "item": [
+        {
+          "name": "Submit Feedback",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/feedback",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"message\": \"Great product, loving it!\",\n  \"type\": \"feedback\",\n  \"subject\": null\n}" }
+          }
+        },
+        {
+          "name": "Submit Contact",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/feedback",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"message\": \"I need help with my subscription.\",\n  \"type\": \"contact\",\n  \"subject\": \"Subscription Issue\"\n}" }
+          }
+        },
+        {
+          "name": "Submit Feedback — Invalid type (should 400)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/feedback",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"message\": \"test\",\n  \"type\": \"spam\"\n}" }
+          }
+        },
+        {
+          "name": "Get Public Reviews (no auth)",
+          "request": { "method": "GET", "url": "{{base_url}}/api/feedback/public" }
+        }
+      ]
+    },
+    {
+      "name": "9. SECURITY CHECKS",
+      "item": [
+        {
+          "name": "No Auth — should 401",
+          "request": { "method": "GET", "url": "{{base_url}}/api/auth/me" }
+        },
+        {
+          "name": "User hits Admin route — should 403",
+          "request": { "method": "GET", "url": "{{base_url}}/api/admin/dashboard" }
+        },
+        {
+          "name": "Nonexistent API — should 404",
+          "request": { "method": "GET", "url": "{{base_url}}/api/nonexistent" }
+        }
+      ]
+    }
+  ]
+}
