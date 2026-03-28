@@ -95,7 +95,7 @@ All routes in this group require authentication with the `User` or `Admin` role.
 | DELETE | `/cart/items/{productId}` | Removes an item from the cart. Accepts optional `?durationMonths=` to target a specific plan — otherwise removes all plans for that product. |
 | POST | `/cart/voucher` | Previews a voucher discount on the current cart without applying it. Returns discount breakdown including bundle discount, voucher discount, and final total. |
 | POST | `/checkout` | Places orders for all items currently in the cart. Applies bundle discount and voucher if provided. Clears the cart on success. Returns `400` if cart is empty. Returns `409` if the voucher was claimed by a concurrent checkout. |
-| GET | `/orders` | Returns the authenticated user's full order history ordered by date descending. |
+| GET | `/orders` | Returns the authenticated user's full order history ordered by date descending. Each entry includes delivery status and delivery note if the order has been delivered. |
 | GET | `/account` | Returns profile information for the authenticated user. |
 
 ---
@@ -108,8 +108,8 @@ All routes in this group require the `Admin` role.
 |--------|-------|-------------|
 | GET | `/dashboard` | Returns platform-wide statistics — total users, total orders, pending orders, total products, active products, total vouchers, active vouchers. |
 | GET | `/products?page=1&pageSize=20` | Returns a paginated list of all products (active and inactive) with their full subscription plan lists. |
-| POST | `/products` | Creates a new product. Validated fields: title (2–200 chars), short description (2–1000 chars), price (0–1,000,000). |
-| PUT | `/products/{id}` | Updates an existing product's title, description, price, and active status. |
+| POST | `/products` | Creates a new product. Validated fields: title (2–200 chars), short description (2–1000 chars), price (0–1,000,000). Accepts an optional `deliveryTemplate` field. |
+| PUT | `/products/{id}` | Updates an existing product's title, description, price, active status, and delivery template. |
 | DELETE | `/products/{id}` | If the product has no orders — hard deletes the product and its subscription plans. If orders exist — soft-deactivates the product and all its plans to preserve order history. |
 | POST | `/products/{id}/subscriptions` | Creates or updates a subscription plan for a product. Upserts by product ID + duration months combination. |
 | DELETE | `/subscriptions/{id}` | Permanently deletes a subscription plan. |
@@ -125,8 +125,9 @@ All routes require the `Admin` role.
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| GET | `/?page=1&pageSize=20` | Returns a paginated list of all orders across all users, ordered by date descending. Each entry includes client email, product name, price, payment status, and order date. |
+| GET | `/?page=1&pageSize=20` | Returns a paginated list of all orders across all users, ordered by date descending. Each entry includes client email, client name, product name, price, payment status, order date, delivery status, delivery note, and the product's delivery template. |
 | PATCH | `/{id}/status` | Updates the payment status of an order. Accepted values: `Pending`, `Paid`, `Failed`, `Cancelled`, `Refunded`. |
+| PATCH | `/{id}/deliver` | Marks an order as delivered. Saves the delivery note to the order and sends a delivery email to the client. Only allowed on orders with `Paid` status. Returns `400` if the order is not paid. |
 | POST | `/payment/callback` | Payment gateway webhook. Marks an order as `Paid` or `Failed` based on gateway result. Secured with a shared secret via `X-Payment-Secret` header. No session auth required — intended for server-to-server calls only. |
 
 ---
@@ -220,6 +221,16 @@ Concurrent checkout requests cannot both claim the last usage slot of a voucher.
 ### Soft Delete
 Deleting a product that has associated orders does not remove the record. Instead, the product and all its subscription plans are marked inactive. This preserves the integrity of existing order records and order history for users and admins.
 
+### Delivery System
+Each product has an optional `DeliveryTemplate` field — a free-text field intended to hold workflow JSON, credentials, setup instructions, or download links. When an admin creates or edits a product, they can store the delivery content once on the product itself.
+
+When fulfilling an order, the admin opens the Deliver panel for a `Paid` order. The delivery note is pre-filled from the product's template. The admin can review, edit, and then send. On submission:
+1. The delivery note is saved to the order record (`DeliveryNote`, `IsDelivered = true`)
+2. A delivery email is sent to the client containing the note
+3. The delivery note becomes visible to the user on their orders page
+
+Only orders with `Paid` status can be delivered. Delivery is a one-time operation per order — once `IsDelivered` is set, the Deliver button is replaced with a "Delivered" indicator.
+
 ### Payment Status Lifecycle
 Orders are created with `Pending` status. Admin can transition any order to `Paid`, `Failed`, `Cancelled`, or `Refunded`.
 
@@ -231,6 +242,11 @@ Cart state is stored in the server-side session, serialized as JSON. The cart is
 ## Database
 
 **Entities:** `ApplicationUser`, `Product`, `ProductSubscription`, `Order`, `Voucher`, `Feedback`
+
+**Notable columns:**
+- `Product.DeliveryTemplate` — nullable text, stores workflow JSON or delivery instructions authored at product creation time
+- `Order.DeliveryNote` — nullable text, populated when admin delivers an order
+- `Order.IsDelivered` — boolean, default false
 
 - PostgreSQL with EF Core code-first migrations
 - Transient failure retry: up to 3 attempts with 5-second delay between retries

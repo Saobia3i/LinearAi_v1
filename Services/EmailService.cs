@@ -67,9 +67,60 @@ namespace Linear_v1.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to send confirmation email to {Email}. SMTP host: {Host}:{Port}. Error: {Error}", 
+                _logger.LogError(ex, "Failed to send confirmation email to {Email}. SMTP host: {Host}:{Port}. Error: {Error}",
                     toEmail, smtpHost, smtpPort, ex.Message);
                 throw new InvalidOperationException("Failed to send confirmation email. Verify SMTP credentials and settings.", ex);
+            }
+        }
+
+        public async Task SendDeliveryEmailAsync(string toEmail, string userName, string productTitle, int orderId, string deliveryNote)
+        {
+            var smtpHost = _config["Email:SmtpHost"] ?? throw new InvalidOperationException("Email:SmtpHost is not configured.");
+            var smtpPortRaw = _config["Email:SmtpPort"] ?? throw new InvalidOperationException("Email:SmtpPort is not configured.");
+            if (!int.TryParse(smtpPortRaw, out var smtpPort))
+                throw new InvalidOperationException("Email:SmtpPort must be a valid integer.");
+
+            var smtpUser = _config["Email:SmtpUser"] ?? throw new InvalidOperationException("Email:SmtpUser is not configured.");
+            var smtpPass = _config["Email:SmtpPass"] ?? throw new InvalidOperationException("Email:SmtpPass is not configured.");
+            var fromEmail = _config["Email:FromEmail"] ?? throw new InvalidOperationException("Email:FromEmail is not configured.");
+
+            var safeNote = System.Net.WebUtility.HtmlEncode(deliveryNote).Replace("\n", "<br>");
+
+            var subject = $"Linear AI — Your Order #{orderId} Has Been Delivered";
+            var body = $@"
+                <div style='font-family:Arial;max-width:600px;margin:auto;padding:20px;background:#0a0a0a;color:#fff;border-radius:8px;'>
+                    <h2 style='color:#7c3aed;'>Linear AI</h2>
+                    <p>Hello {System.Net.WebUtility.HtmlEncode(userName)},</p>
+                    <p>Your order <strong>#{orderId}</strong> for <strong>{System.Net.WebUtility.HtmlEncode(productTitle)}</strong> has been delivered.</p>
+                    <div style='background:#1a1a1a;border-left:4px solid #7c3aed;padding:16px;border-radius:4px;margin:16px 0;'>
+                        <p style='margin:0;color:#ccc;font-size:14px;white-space:pre-wrap;'>{safeNote}</p>
+                    </div>
+                    <p style='color:#999;font-size:12px;'>You can view all your orders at any time in your account dashboard.</p>
+                    <p style='color:#999;font-size:12px;'>If you have any questions, please contact our support team.</p>
+                </div>";
+
+            var message = new MimeMessage();
+            message.From.Add(MailboxAddress.Parse(fromEmail));
+            message.To.Add(MailboxAddress.Parse(toEmail));
+            message.Subject = subject;
+            message.Body = new BodyBuilder { HtmlBody = body }.ToMessageBody();
+
+            using var client = new SmtpClient();
+            try
+            {
+                var secureOption = smtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+                await client.ConnectAsync(smtpHost, smtpPort, secureOption);
+                await client.AuthenticateAsync(smtpUser, smtpPass);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+
+                _logger.LogInformation("Delivery email sent to {Email} for order #{OrderId}", toEmail, orderId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send delivery email to {Email} for order #{OrderId}. Error: {Error}",
+                    toEmail, orderId, ex.Message);
+                throw new InvalidOperationException("Failed to send delivery email.", ex);
             }
         }
     }

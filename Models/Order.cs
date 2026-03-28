@@ -38,6 +38,10 @@ namespace Linear_v1.Models
         public decimal FinalPrice { get; set; }
         public DateTime? SubscriptionEndDate { get; set; }
 
+        // Delivery
+        public string? DeliveryNote { get; set; }
+        public bool IsDelivered { get; set; } = false;
+
         // Navigation properties
         public virtual ApplicationUser User { get; set; } = null!;
         public virtual Product Product { get; set; } = null!;

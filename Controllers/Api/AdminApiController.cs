@@ -69,6 +69,7 @@ namespace Linear_v1.Controllers.Api
                     p.ShortDescription,
                     p.Price,
                     p.IsActive,
+                    p.DeliveryTemplate,
                     p.CreatedAt,
                     subscriptions = p.Subscriptions.Select(s => new
                     {
@@ -100,6 +101,7 @@ namespace Linear_v1.Controllers.Api
                 ShortDescription = request.ShortDescription.Trim(),
                 Price = request.Price,
                 IsActive = true,
+                DeliveryTemplate = string.IsNullOrWhiteSpace(request.DeliveryTemplate) ? null : request.DeliveryTemplate.Trim(),
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -122,6 +124,7 @@ namespace Linear_v1.Controllers.Api
             product.ShortDescription = request.ShortDescription.Trim();
             product.Price = request.Price;
             product.IsActive = request.IsActive;
+            product.DeliveryTemplate = string.IsNullOrWhiteSpace(request.DeliveryTemplate) ? null : request.DeliveryTemplate.Trim();
 
             await _db.SaveChangesAsync();
 
@@ -307,6 +310,8 @@ namespace Linear_v1.Controllers.Api
             public decimal Price { get; set; }
 
             public bool IsActive { get; set; } = true;
+
+            public string? DeliveryTemplate { get; set; }
         }
 
         public sealed class SubscriptionRequest

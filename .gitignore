@@ -368,3 +368,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# React build output (built at deploy time)
+client/dist/
+
+# .NET telemetry / local dotnet home
+.dotnet-home/
+.artifacts/

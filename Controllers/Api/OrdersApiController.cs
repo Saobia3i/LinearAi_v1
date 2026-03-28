@@ -1,6 +1,7 @@
 ﻿using Linear_v1.Data;
 using Linear_v1.Infrastructure;
 using Linear_v1.Models;
+using Linear_v1.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -16,11 +17,13 @@ namespace Linear_v1.Controllers.Api
     {
         private readonly ApplicationDbContext _db;
         private readonly IConfiguration _config;
+        private readonly IEmailService _email;
 
-        public OrdersApiController(ApplicationDbContext db, IConfiguration config)
+        public OrdersApiController(ApplicationDbContext db, IConfiguration config, IEmailService email)
         {
             _db = db;
             _config = config;
+            _email = email;
         }
 
         // GET: api/orders?page=1&pageSize=20
@@ -44,10 +47,14 @@ namespace Linear_v1.Controllers.Api
                 {
                     o.Id,
                     clientEmail = o.User.Email,
+                    clientName = o.User.FullName,
                     product = o.Product.Title,
-                    price = o.Product.Price,
+                    productDeliveryTemplate = o.Product.DeliveryTemplate,
+                    price = o.FinalPrice,
                     paymentStatus = o.PaymentStatus.ToString(),
-                    o.OrderDate
+                    o.OrderDate,
+                    o.IsDelivered,
+                    o.DeliveryNote
                 })
                 .ToListAsync();
 
@@ -112,7 +119,51 @@ namespace Linear_v1.Controllers.Api
             });
         }
 
+        // PATCH: api/orders/5/deliver
+        [HttpPatch("{id}/deliver")]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
+        public async Task<IActionResult> Deliver(int id, [FromBody] DeliverRequest request)
+        {
+            var order = await _db.Orders
+                .Include(o => o.User)
+                .Include(o => o.Product)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null)
+                return NotFound(new { success = false, message = "Order not found." });
+
+            if (order.PaymentStatus != PaymentStatus.Paid)
+                return BadRequest(new { success = false, message = "Only paid orders can be delivered." });
+
+            order.DeliveryNote = request.DeliveryNote.Trim();
+            order.IsDelivered = true;
+            await _db.SaveChangesAsync();
+
+            try
+            {
+                await _email.SendDeliveryEmailAsync(
+                    order.User.Email!,
+                    order.User.FullName,
+                    order.Product.Title,
+                    order.Id,
+                    order.DeliveryNote
+                );
+            }
+            catch (Exception ex)
+            {
+                // Delivery note is saved; email failure should not roll back.
+                return Ok(new
+                {
+                    success = true,
+                    message = $"Order #{id} marked as delivered, but the delivery email could not be sent: {ex.Message}"
+                });
+            }
+
+            return Ok(new { success = true, message = $"Order #{id} delivered and email sent to {order.User.Email}." });
+        }
+
         public record UpdateStatusRequest(string Status);
         public record PaymentCallbackRequest(int OrderId, bool Success);
+        public record DeliverRequest([System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.MinLength(5)] string DeliveryNote);
     }
 }
