@@ -88,8 +88,9 @@ namespace Linear_v1.Controllers
                 await _userManager.AddToRoleAsync(user, "User");
 
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var confirmLink = Url.Action("ConfirmEmail", "Account",
-                    new { userId = user.Id, token }, Request.Scheme)!;
+                var encodedToken = Uri.EscapeDataString(token);
+                var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                var confirmLink = $"{baseUrl}/Account/ConfirmEmail?userId={user.Id}&token={encodedToken}";
 
                 await _emailService.SendEmailConfirmationAsync(user.Email, user.FullName, confirmLink);
 
