@@ -8,6 +8,7 @@ import type {
   DashboardSummary,
   FeedbackItem,
   OrderSummary,
+  PagedApiResponse,
   Product,
   ProductSubscription,
   PublicReview,
@@ -140,8 +141,10 @@ export async function deleteAdminProduct(productId: number) {
   return response.data;
 }
 
-export async function getAdminVouchers() {
-  const response = await api.get<ApiResponse<VoucherSummary[]>>("api/admin/vouchers");
+export async function getAdminVouchers(page = 1, pageSize = 20) {
+  const response = await api.get<PagedApiResponse<VoucherSummary[]>>(
+    `api/admin/vouchers?page=${page}&pageSize=${pageSize}`
+  );
   return response.data;
 }
 export async function createAdminVoucher(payload: {
@@ -162,8 +165,10 @@ export async function toggleAdminVoucher(id: number) {
   return response.data;
 }
 
-export async function getAdminOrders() {
-  const response = await api.get<ApiResponse<AdminOrderSummary[]>>("api/orders");
+export async function getAdminOrders(page = 1, pageSize = 20) {
+  const response = await api.get<PagedApiResponse<AdminOrderSummary[]>>(
+    `api/orders?page=${page}&pageSize=${pageSize}`
+  );
   return response.data;
 }
 

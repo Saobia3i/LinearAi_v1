@@ -1,19 +1,26 @@
 ﻿using Linear_v1.Data;
+using Linear_v1.Infrastructure;
+using Linear_v1.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Linear_v1.Controllers.Api
 {
     [Route("api/products")]
     [ApiController]
+    [EnableRateLimiting(RateLimitPolicies.Public)]
     public class ProductsApiController : ControllerBase
     {
         private readonly ApplicationDbContext _db;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public ProductsApiController(ApplicationDbContext db)
+        public ProductsApiController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
         {
             _db = db;
+            _userManager = userManager;
         }
 
         // GET: api/products
@@ -49,11 +56,32 @@ namespace Linear_v1.Controllers.Api
         }
 
         // GET: api/products/5
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var product = await _db.Products.FindAsync(id);
-            if (product == null || !product.IsActive)
+            var product = await _db.Products
+                .Where(p => p.Id == id && p.IsActive)
+                .Include(p => p.Subscriptions.Where(s => s.IsActive))
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Title,
+                    p.ShortDescription,
+                    p.Price,
+                    subscriptions = p.Subscriptions
+                        .OrderBy(s => s.DurationMonths)
+                        .Select(s => new
+                        {
+                            s.Id,
+                            s.DurationMonths,
+                            s.Price,
+                            s.DiscountPercent,
+                            finalPrice = s.FinalPrice
+                        })
+                })
+                .FirstOrDefaultAsync();
+
+            if (product == null)
                 return NotFound(new { success = false, message = "Product not found." });
 
             return Ok(new { success = true, data = product });
@@ -62,6 +90,7 @@ namespace Linear_v1.Controllers.Api
         // POST: api/products/buy
         [HttpPost("buy")]
         [Authorize]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
         public async Task<IActionResult> Buy([FromBody] BuyRequest request)
         {
             var userId = _userManager.GetUserId(User);
@@ -70,11 +99,11 @@ namespace Linear_v1.Controllers.Api
             if (product == null || !product.IsActive)
                 return NotFound(new { success = false, message = "Product not found." });
 
-            var order = new Linear_v1.Models.Order
+            var order = new Order
             {
                 UserId = userId!,
                 ProductId = request.ProductId,
-                PaymentStatus = Linear_v1.Models.PaymentStatus.Pending,
+                PaymentStatus = PaymentStatus.Pending,
                 OrderDate = DateTime.UtcNow
             };
 
@@ -90,9 +119,5 @@ namespace Linear_v1.Controllers.Api
         }
 
         public record BuyRequest(int ProductId);
-
-        private Microsoft.AspNetCore.Identity.UserManager<Linear_v1.Models.ApplicationUser> _userManager
-            => HttpContext.RequestServices
-                .GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<Linear_v1.Models.ApplicationUser>>();
     }
 }

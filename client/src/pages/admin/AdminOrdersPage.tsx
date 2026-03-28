@@ -1,29 +1,31 @@
-import { Chip, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
+import { Chip, Pagination, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { getAdminOrders, getErrorMessage, updateAdminOrderStatus } from "../../api";
 import { AppButton as Button } from "../../components/ui/AppButton";
-import type { AdminOrderSummary } from "../../types";
+import type { AdminOrderSummary, PaginationMeta } from "../../types";
 
 export function AdminOrdersPage() {
   const [orders, setOrders] = useState<AdminOrderSummary[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, pageSize: 20, total: 0, totalPages: 1 });
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  const load = async () => {
-    const res = await getAdminOrders();
+  const load = async (page = 1) => {
+    const res = await getAdminOrders(page, 20);
     setOrders(res.data ?? []);
+    if (res.pagination) setPagination(res.pagination);
   };
 
   useEffect(() => {
-    load().catch(() => setOrders([]));
+    load(1).catch(() => setOrders([]));
   }, []);
 
   const onMark = async (id: number, status: string) => {
     try {
       await updateAdminOrderStatus(id, status);
       setMessage({ text: `Order #${id} marked as ${status}.`, type: "success" });
-      await load();
+      await load(pagination.page);
     } catch (e) {
       setMessage({ text: getErrorMessage(e, "Status update failed"), type: "error" });
     }
@@ -61,7 +63,7 @@ export function AdminOrdersPage() {
           <p className="premium-kicker">Operations Queue</p>
           <h2 className="section-title">Order Management</h2>
         </div>
-        <span className="premium-chip-blue">{orders.length} orders</span>
+        <span className="premium-chip-blue">{pagination.total} orders</span>
       </div>
 
       <div className="premium-filter-bar">
@@ -195,6 +197,18 @@ export function AdminOrdersPage() {
           </div>
         ))}
       </div>
+      {pagination.totalPages > 1 && (
+        <div className="premium-pagination-wrap">
+          <Pagination
+            page={pagination.page}
+            total={pagination.totalPages}
+            onChange={(p) => load(p)}
+            radius="full"
+            color="primary"
+            showControls
+          />
+        </div>
+      )}
     </section>
   );
 }

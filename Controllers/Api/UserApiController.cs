@@ -1,10 +1,13 @@
 using Linear_v1.Data;
+using Linear_v1.Infrastructure;
 using Linear_v1.Models;
 using Linear_v1.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
 namespace Linear_v1.Controllers.Api
@@ -12,6 +15,7 @@ namespace Linear_v1.Controllers.Api
     [ApiController]
     [Route("api/user")]
     [Authorize(Roles = "User,Admin")]
+    [EnableRateLimiting(RateLimitPolicies.Api)]
     public class UserApiController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -109,14 +113,14 @@ namespace Linear_v1.Controllers.Api
         }
 
         [HttpGet("cart")]
-        public IActionResult GetCartSummary([FromQuery] string? voucherCode)
+        public async Task<IActionResult> GetCartSummary([FromQuery] string? voucherCode)
         {
             var normalizedVoucherCode = string.IsNullOrWhiteSpace(voucherCode)
                 ? null
                 : voucherCode.Trim().ToUpperInvariant();
 
             var cart = GetCart();
-            var checkout = BuildCheckout(cart, normalizedVoucherCode);
+            var checkout = await BuildCheckoutAsync(cart, normalizedVoucherCode);
 
             return Ok(new
             {
@@ -131,6 +135,7 @@ namespace Linear_v1.Controllers.Api
         }
 
         [HttpPost("cart/items")]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
         public async Task<IActionResult> AddToCart([FromBody] AddCartItemRequest request)
         {
             if (request.ProductId <= 0 || request.DurationMonths <= 0)
@@ -205,11 +210,11 @@ namespace Linear_v1.Controllers.Api
         }
 
         [HttpPost("cart/voucher")]
-        public IActionResult ApplyVoucher([FromBody] ApplyVoucherRequest request)
+        public async Task<IActionResult> ApplyVoucher([FromBody] ApplyVoucherRequest request)
         {
             var normalizedVoucherCode = request.VoucherCode?.Trim().ToUpperInvariant();
             var cart = GetCart();
-            var checkout = BuildCheckout(cart, normalizedVoucherCode);
+            var checkout = await BuildCheckoutAsync(cart, normalizedVoucherCode);
 
             return Ok(new
             {
@@ -224,6 +229,7 @@ namespace Linear_v1.Controllers.Api
         }
 
         [HttpPost("checkout")]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
         public async Task<IActionResult> Checkout([FromBody] CheckoutRequest request)
         {
             var cart = GetCart();
@@ -239,27 +245,34 @@ namespace Linear_v1.Controllers.Api
             }
 
             var normalizedVoucherCode = request.VoucherCode?.Trim().ToUpperInvariant();
-            var checkout = BuildCheckout(cart, normalizedVoucherCode);
+            var checkout = await BuildCheckoutAsync(cart, normalizedVoucherCode);
 
             int? appliedVoucherId = null;
 
             if (checkout.VoucherValid && !string.IsNullOrEmpty(normalizedVoucherCode))
             {
-                appliedVoucherId = await _db.Vouchers
+                // Atomic claim: increment UsedCount only when the voucher is still valid.
+                // The WHERE clause acts as the guard — if a concurrent request already pushed
+                // UsedCount to the limit, affected rows will be 0 and we abort.
+                var affected = await _db.Vouchers
                     .Where(v => v.Code == normalizedVoucherCode &&
                                 v.IsActive &&
                                 (!v.ExpiryDate.HasValue || v.ExpiryDate.Value > DateTime.UtcNow) &&
                                 (!v.UsageLimit.HasValue || v.UsedCount < v.UsageLimit.Value))
-                    .Select(v => (int?)v.Id)
-                    .FirstOrDefaultAsync();
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(v => v.UsedCount, v => v.UsedCount + 1));
 
-                if (appliedVoucherId.HasValue)
+                if (affected > 0)
                 {
-                    await _db.Vouchers
-                        .Where(v => v.Id == appliedVoucherId.Value)
-                        .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(v => v.UsedCount, v => v.UsedCount + 1)
-                            .SetProperty(v => v.IsActive, v => !v.UsageLimit.HasValue || (v.UsedCount + 1) < v.UsageLimit.Value));
+                    appliedVoucherId = await _db.Vouchers
+                        .Where(v => v.Code == normalizedVoucherCode)
+                        .Select(v => (int?)v.Id)
+                        .FirstOrDefaultAsync();
+                }
+                else
+                {
+                    // Voucher was claimed by someone else between preview and checkout
+                    return Conflict(new { success = false, message = "Voucher is no longer valid. Please remove it and try again." });
                 }
             }
 
@@ -405,7 +418,7 @@ namespace Linear_v1.Controllers.Api
             HttpContext.Session.SetString("Cart", JsonSerializer.Serialize(cart));
         }
 
-        private CheckoutViewModel BuildCheckout(List<CartItem> cart, string? voucherCode)
+        private async Task<CheckoutViewModel> BuildCheckoutAsync(List<CartItem> cart, string? voucherCode)
         {
             var model = new CheckoutViewModel
             {
@@ -426,7 +439,7 @@ namespace Linear_v1.Controllers.Api
 
             if (!string.IsNullOrWhiteSpace(voucherCode))
             {
-                var voucher = _db.Vouchers
+                var voucher = await _db.Vouchers
                     .Where(v =>
                         v.Code == voucherCode &&
                         v.IsActive &&
@@ -444,7 +457,7 @@ namespace Linear_v1.Controllers.Api
                         IsActive = v.IsActive,
                         ExpiryDate = v.ExpiryDate
                     })
-                    .FirstOrDefault();
+                    .FirstOrDefaultAsync();
 
                 if (voucher != null)
                 {
@@ -483,17 +496,22 @@ namespace Linear_v1.Controllers.Api
 
         public sealed class AddCartItemRequest
         {
+            [Range(1, int.MaxValue, ErrorMessage = "Invalid product.")]
             public int ProductId { get; set; }
+
+            [Range(1, 120, ErrorMessage = "Duration must be between 1 and 120 months.")]
             public int DurationMonths { get; set; }
         }
 
         public sealed class ApplyVoucherRequest
         {
+            [StringLength(50)]
             public string? VoucherCode { get; set; }
         }
 
         public sealed class CheckoutRequest
         {
+            [StringLength(50)]
             public string? VoucherCode { get; set; }
         }
 
