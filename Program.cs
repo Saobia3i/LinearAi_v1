@@ -10,7 +10,16 @@ using System.Data;
 // Tell Npgsql to treat all DateTime as UTC globally
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    // Disable config file watching to avoid inotify limit on constrained hosts (e.g. Render free tier)
+    EnvironmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"
+});
+builder.Configuration.Sources
+    .OfType<Microsoft.Extensions.Configuration.FileConfigurationSource>()
+    .ToList()
+    .ForEach(s => s.ReloadOnChange = false);
 
 // Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
